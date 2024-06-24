@@ -54,7 +54,7 @@ export type StatusUpdateFormProps<AT extends DefaultAT = DefaultAT> = PropsWithE
    *   modifyActivityData={(data) => ({...data, target: 'Group:1'})}
    * />
    * ```
-   * add igc data here????
+   * add igc data here?????
    * */
   modifyActivityData?: (activity: NewActivity<AT>) => NewActivity<AT>;
   /** A callback to run after the activity is posted successfully */

@@ -344,7 +344,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       console.log('file', file);
       if (file.type.startsWith('image/')) {
         uploadNewImage(file);
-      } else if (file.name.endsWith('.igc')) {
+      } else if (file instanceof File && file.name.endsWith('.igc')) {
         uploadNewIgcFile(file);
       } else if (file instanceof File) {
         uploadNewFile(file);

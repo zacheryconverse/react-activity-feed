@@ -20,6 +20,18 @@ jobs:
       - name: Install dependencies
         run: yarn install
 
+      - name: Debug Info
+        run: |
+          echo "Current directory: $(pwd)"
+          echo "List of files:"
+          ls -al
+          echo "Yarn version:"
+          yarn --version
+          echo "Node version:"
+          node --version
+          echo "Package.json content:"
+          cat package.json
+
       - name: Bump version and create changelog
         id: bump_version
         run: |

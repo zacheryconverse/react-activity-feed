@@ -185,6 +185,15 @@ export function StatusUpdateForm<
                 handleFiles={state.uploadNewFiles}
               />
             )}
+
+            {state.igcFiles.order.length > 0 && (
+              <FilePreviewer
+                uploads={state.igcFiles.order.map((id) => state.igcFiles.data[id]) as FileUpload[]}
+                handleRemove={state.removeIgcFile}
+                handleRetry={(id) => state.uploadIgcFile(id, state.igcFiles.data[id])}
+                handleFiles={state.uploadNewFiles}
+              />
+            )}
           </PanelContent>
 
           <PanelFooter>

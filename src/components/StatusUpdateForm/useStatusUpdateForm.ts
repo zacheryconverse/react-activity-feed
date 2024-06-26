@@ -197,6 +197,7 @@ const useOg = ({ client, logErr }: UseOgProps) => {
 const useUpload = ({ client, logErr }: UseUploadProps) => {
   const [images, setImages] = useState<ImagesState>(defaultImageState);
   const [files, setFiles] = useState<FilesState>(defaultFileState);
+  const [igcFiles, setIgcFiles] = useState<FilesState>(defaultFileState);
 
   const reqInProgress = useRef<Record<string, boolean>>({});
 
@@ -207,10 +208,13 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
   const orderedFiles = files.order.map((id) => files.data[id]);
 
   const uploadedFiles = orderedFiles.filter((upload) => upload.url);
+  const orderedIgcFiles = igcFiles.order.map((id) => igcFiles.data[id]);
+  const uploadedIgcFiles = orderedIgcFiles.filter((upload) => upload.url);
 
   const resetUpload = useCallback(() => {
     setImages(defaultImageState);
     setFiles(defaultFileState);
+    setIgcFiles(defaultFileState);
   }, []);
 
   const uploadNewImage = useCallback((file: File | Blob) => {
@@ -240,6 +244,14 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
   const uploadNewFile = useCallback((file: File) => {
     const id = generateRandomId();
     setFiles(({ order, data }) => {
+      data[id] = { id, file, state: 'uploading' };
+      return { data: { ...data }, order: [...order, id] };
+    });
+  }, []);
+
+  const uploadNewIgcFile = useCallback((file: File) => {
+    const id = generateRandomId();
+    setIgcFiles(({ order, data }) => {
       data[id] = { id, file, state: 'uploading' };
       return { data: { ...data }, order: [...order, id] };
     });
@@ -298,11 +310,42 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     }
   }, []);
 
+  const uploadIgcFile = useCallback(async (id: string, file: FileUploadState) => {
+    // eslint-disable-next-line sonarjs/no-identical-functions
+    setIgcFiles((prevState) => {
+      if (!prevState.data[id]) return prevState;
+      prevState.data[id].state = 'uploading';
+      return { ...prevState, data: { ...prevState.data } };
+    });
+
+    try {
+      const { file: url } = await client.files.upload(file.file as File);
+      // eslint-disable-next-line sonarjs/no-identical-functions
+      setIgcFiles((prevState) => {
+        if (!prevState.data[id]) return prevState;
+        prevState.data[id].url = url;
+        prevState.data[id].state = 'finished';
+        return { ...prevState, data: { ...prevState.data } };
+      });
+    } catch (e) {
+      console.warn(e);
+      setIgcFiles((prevState) => {
+        if (!prevState.data[id]) return prevState;
+        logErr(e, 'upload-igc-file');
+        prevState.data[id].state = 'failed';
+        return { ...prevState, data: { ...prevState.data } };
+      });
+    }
+  }, []);
+
   const uploadNewFiles = useCallback((files: Blob[] | File[] | FileList) => {
     for (let i = 0; i < files.length; i += 1) {
       const file = files[i];
+      console.log('file', file);
       if (file.type.startsWith('image/')) {
         uploadNewImage(file);
+      } else if (file.name.endsWith('.igc')) {
+        uploadNewIgcFile(file);
       } else if (file instanceof File) {
         uploadNewFile(file);
       }
@@ -320,6 +363,15 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
   const removeFile = useCallback((id: string) => {
     // eslint-disable-next-line sonarjs/no-identical-functions
     setFiles((prevState) => {
+      prevState.order = prevState.order.filter((oid) => id !== oid);
+      delete prevState.data[id];
+      return { ...prevState };
+    });
+  }, []);
+
+  const removeIgcFile = useCallback((id: string) => {
+    // eslint-disable-next-line sonarjs/no-identical-functions
+    setIgcFiles((prevState) => {
       prevState.order = prevState.order.filter((oid) => id !== oid);
       delete prevState.data[id];
       return { ...prevState };
@@ -346,19 +398,34 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       });
   }, [files.order]);
 
+  useEffect(() => {
+    igcFiles.order
+      .filter((id) => !reqInProgress.current[id] && igcFiles.data[id].state === 'uploading')
+      .forEach(async (id) => {
+        reqInProgress.current[id] = true;
+        await uploadIgcFile(id, igcFiles.data[id]);
+        delete reqInProgress.current[id];
+      });
+  }, [igcFiles.order]);
+
   return {
     images,
     files,
+    igcFiles,
     orderedImages,
     orderedFiles,
+    orderedIgcFiles,
     uploadedImages,
     uploadedFiles,
+    uploadedIgcFiles,
     resetUpload,
     uploadNewFiles,
     uploadFile,
     uploadImage,
+    uploadIgcFile,
     removeFile,
     removeImage,
+    removeIgcFile,
   };
 };
 

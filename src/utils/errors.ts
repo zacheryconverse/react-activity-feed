@@ -8,6 +8,7 @@ export type NetworkRequestTypes =
   | 'get-notification-counts'
   | 'upload-image'
   | 'upload-file'
+  | 'upload-igc-file'
   | 'get-og'
   | 'add-activity'
   | 'delete-activity'

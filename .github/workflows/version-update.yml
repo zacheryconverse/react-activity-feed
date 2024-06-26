@@ -18,14 +18,15 @@ jobs:
           node-version: '14'
 
       - name: Install dependencies
-        run: npm install
+        run: yarn install
 
       - name: Bump version and create changelog
         id: bump_version
         run: |
           git config --global user.name 'github-actions[bot]'
           git config --global user.email 'github-actions[bot]@users.noreply.github.com'
-          npm version patch -m "chore(release): %s"
+          yarn version --patch
+          echo "Bumped version to $(node -p -e "require('./package.json').version")"
           echo "::set-output name=version::$(node -p -e "require('./package.json').version")"
 
       - name: Push changes

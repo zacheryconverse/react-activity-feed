@@ -14,7 +14,7 @@ type NotificationFeedInnerProps<
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = {
   /** the component used to render a grouped notifications in the feed
    * #Notification (Component)#
@@ -47,7 +47,7 @@ export type NotificationFeedProps<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 > = Partial<
   NotificationFeedInnerProps<UT, AT, CT, RT, CRT> &
     Pick<
@@ -72,7 +72,7 @@ const NotificationFeedInner = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   Group,
   LoadingIndicator,
@@ -131,7 +131,7 @@ export const NotificationFeed = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   options,
   userId,

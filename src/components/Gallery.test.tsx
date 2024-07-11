@@ -8,11 +8,16 @@ import { Gallery } from './Gallery';
 jest.mock(
   'react-image-lightbox',
   // eslint-disable-next-line react/display-name
-  () => ({ onCloseRequest, mainSrc }: { onCloseRequest: () => void; mainSrc?: string }) => (
-    <div onClick={onCloseRequest}>
-      lightbox <span>{mainSrc}</span>
-    </div>
-  ),
+  () =>
+    ({ onCloseRequest, mainSrc }: { onCloseRequest: () => void; mainSrc?: string }) => {
+      const MockedLightbox: React.FC = () => (
+        <div onClick={onCloseRequest}>
+          lightbox <span>{mainSrc}</span>
+        </div>
+      );
+      MockedLightbox.displayName = 'MockedLightbox';
+      return MockedLightbox;
+    },
 );
 
 const testData = [
@@ -115,7 +120,7 @@ describe('Gallery', () => {
           />
         </div>
         <div>
-          lightbox 
+          lightbox
           <span>
             https://source.unsplash.com/random/800x600
           </span>

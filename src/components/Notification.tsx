@@ -21,7 +21,7 @@ export type NotificationProps<
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = PropsWithElementAttributes<{
   /** The activity group to display in this notification */
   activityGroup: NotificationActivityEnriched<UT, AT, CT, RT, CRT>;
@@ -38,7 +38,7 @@ const getUsers = <
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 >(
   activities: Array<EnrichedActivity<UT, AT, CT, RT, CRT>>,
 ) => activities.map((item) => userOrDefault<UT>(item.actor));
@@ -112,7 +112,7 @@ export const Notification = <
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 >({
   activityGroup,
   onMarkAsRead,

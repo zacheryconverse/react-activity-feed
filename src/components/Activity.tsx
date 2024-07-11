@@ -22,7 +22,7 @@ export type ActivityProps<
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = PropsWithElementAttributes<{
   /** The activity received for stream for which to show the like button. This is
    * used to initialize the toggle state and the counter. */
@@ -65,7 +65,7 @@ const DefaultRepost = <
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 >({
   Header = DefaultActivityHeader,
   HeaderRight,
@@ -87,7 +87,7 @@ export const Activity = <
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 >({
   Header = DefaultActivityHeader,
   HeaderRight,

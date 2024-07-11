@@ -50,6 +50,8 @@ type ImagesState = { data: Record<string, ImageUploadState>; order: string[] };
 
 type FilesState = { data: Record<string, FileUploadState>; order: string[] };
 
+type IgcState = { data: Record<string, FileUploadState>; order: string[] };
+
 type UseOgProps = { client: StreamClient; logErr: (e: Error | unknown, type: NetworkRequestTypes) => void };
 
 type UseUploadProps = UseOgProps;
@@ -200,7 +202,7 @@ const useOg = ({ client, logErr }: UseOgProps) => {
 const useUpload = ({ client, logErr }: UseUploadProps) => {
   const [images, setImages] = useState<ImagesState>(defaultImageState);
   const [files, setFiles] = useState<FilesState>(defaultFileState);
-  const [igcs, setIgcs] = useState(defaultIgcState);
+  const [igcs, setIgcs] = useState<IgcState>(defaultIgcState);
 
   const reqInProgress = useRef<Record<string, boolean>>({});
 
@@ -214,7 +216,6 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
 
   const orderedIgcs = igcs.order.map((id) => igcs.data[id]);
 
-  // @ts-expect-error
   const uploadedIgcs = orderedIgcs.filter((upload) => upload.url);
 
   const resetUpload = useCallback(() => {
@@ -255,15 +256,6 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     });
   }, []);
 
-  // const uploadNewIgc = useCallback((file) => {
-  //   const id = generateRandomId();
-  //   // ts-expect-error
-  //   setIgcs(({ data }) => {
-  //     data[id] = { id, file, state: 'uploading' };
-  //     return { data: { ...data }, order: [id] };
-  //   });
-  // }, []);
-
   const uploadNewIgc = useCallback(async (file: File) => {
     const id = generateRandomId();
     setIgcs(({ data }) => {
@@ -302,40 +294,6 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       });
     }
   }, []);
-  // const uploadNewIgc = useCallback(async (file: File) => {
-  //   const id = generateRandomId();
-  //   setIgcs((prevState) => ({
-  //     data: { ...prevState.data, [id]: { id, file, state: 'uploading' } },
-  //     order: [id],
-  //   }));
-
-  //   try {
-  //     const igcContent = await file.text();
-  //     const igcData = parseIgcFile(igcContent);
-  //     if (igcData) {
-  //       const flightStats = extractFlightStatistics(igcData);
-  //       const url = await client.files.upload(file);
-  //       setIgcs((prevState) => ({
-  //         data: {
-  //           ...prevState.data,
-  //           [id]: { ...prevState.data[id], url: url.file, state: 'finished', data: flightStats },
-  //         },
-  //         order: prevState.order,
-  //       }));
-  //     } else {
-  //       setIgcs((prevState) => ({
-  //         data: { ...prevState.data, [id]: { ...prevState.data[id], state: 'failed' } },
-  //         order: prevState.order,
-  //       }));
-  //     }
-  //   } catch (error) {
-  //     logErr(error, 'upload-igc');
-  //     setIgcs((prevState) => ({
-  //       data: { ...prevState.data, [id]: { ...prevState.data[id], state: 'failed' } },
-  //       order: prevState.order,
-  //     }));
-  //   }
-  // }, []);
 
   const uploadImage = useCallback(async (id: string, img: ImageUploadState) => {
     setImages((prevState) => {
@@ -478,7 +436,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         delete reqInProgress.current[id];
       });
   }, [igcs.order]);
-  // TODO: add removeIgc
+
   return {
     images,
     files,
@@ -574,8 +532,6 @@ export function useStatusUpdateForm<
     !isOgScraping;
 
   const addActivity = async () => {
-    // FIXME:
-    // @ts-expect-error
     const activity: NewActivity<AT> = {
       actor: client.currentUser?.ref() as string,
       object: object(),
@@ -591,7 +547,7 @@ export function useStatusUpdateForm<
           name: (upload.file as File).name,
           mimeType: upload.file.type,
         })),
-        igc: uploadedIgcs.length > 0 ? uploadedIgcs[0].url : null,
+        igc: uploadedIgcs.map((igc) => igc.url).filter(Boolean) as string[],
       },
     };
 

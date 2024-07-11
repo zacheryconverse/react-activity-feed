@@ -8,7 +8,7 @@ import { DefaultUT, DefaultAT } from '../context/StreamApp';
 
 export type AttachedActivityProps<
   UT extends DefaultUT = DefaultUT,
-  AT extends DefaultAT = DefaultAT
+  AT extends DefaultAT = DefaultAT,
 > = PropsWithElementAttributes<{
   activity: EnrichedActivity<UT, AT>;
 }>;

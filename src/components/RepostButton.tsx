@@ -11,7 +11,7 @@ export type RepostButtonProps<
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = PropsWithElementAttributes<{
   /** The activity received for stream for which to show the repost button. This is
    * used to initialize the toggle state and the counter. */
@@ -36,7 +36,7 @@ export const RepostButton = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   activity,
   feedGroup = 'user',

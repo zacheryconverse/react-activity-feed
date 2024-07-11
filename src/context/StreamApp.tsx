@@ -13,7 +13,7 @@ export type SharedFeedManagers<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 > = Record<string, FeedManager<UT, AT, CT, RT, CRT, PT>>;
 
 type Attachments = {
@@ -47,7 +47,7 @@ export type StreamContextValue<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 > = {
   analyticsClient: null | StreamAnalytics<UT>;
   client: null | StreamClient<UT, AT, CT, RT, CRT, PT>;
@@ -70,7 +70,7 @@ export const StreamAppProvider = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   children,
   value,
@@ -84,7 +84,7 @@ export const useStreamContext = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >() => useContext(StreamContext) as StreamContextValue<UT, AT, CT, RT, CRT, PT>;
 
 /**
@@ -97,7 +97,7 @@ export function StreamApp<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   apiKey,
   appId,

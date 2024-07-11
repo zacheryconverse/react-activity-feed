@@ -32,7 +32,8 @@
     "linebreak-style": [2, "unix"],
     "sonarjs/cognitive-complexity": ["error", 35],
     "sonarjs/no-duplicate-string": ["error", 5],
-    "semi": [1, "always"]
+    "semi": [1, "always"],
+    "react/no-unknown-property": ["error", { "ignore": ["sx"] }]
   },
   "env": {
     "es6": true,

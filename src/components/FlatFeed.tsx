@@ -22,7 +22,7 @@ type FlatFeedInnerProps<
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = {
   /** The component used to render an activity in the feed
    * #Activity (Component)#
@@ -55,7 +55,7 @@ export type FlatFeedProps<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 > = Partial<FlatFeedInnerProps<UT, AT, CT, RT, CRT>> &
   Pick<
     FeedManagerProps<UT, AT, CT, RT, CRT, PT>,
@@ -82,7 +82,7 @@ const FlatFeedInner = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   Activity,
   Notifier,
@@ -139,7 +139,7 @@ export const FlatFeed = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   userId,
   options,

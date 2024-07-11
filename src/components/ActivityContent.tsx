@@ -16,7 +16,7 @@ export type ActivityContentProps<
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = ActivityProps<UT, AT, CT, RT, CRT>;
 
 export const ActivityContent = <
@@ -24,7 +24,7 @@ export const ActivityContent = <
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 >({
   activity,
   Repost,

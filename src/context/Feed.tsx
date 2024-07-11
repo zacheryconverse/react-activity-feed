@@ -23,7 +23,7 @@ export type FeedContextValue<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 > = {
   feedGroup: string;
   feedManager: FeedManager<UT, AT, CT, RT, CRT, PT>;
@@ -62,7 +62,7 @@ export type FeedProps<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 > = {
   /** The feed group part of the feed */
   feedGroup: string;
@@ -116,7 +116,7 @@ export const FeedProvider = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   children,
   value,
@@ -130,7 +130,7 @@ export const useFeedContext = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >() => useContext(FeedContext) as FeedContextValue<UT, AT, CT, RT, CRT, PT>;
 
 export function Feed<
@@ -139,7 +139,7 @@ export function Feed<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >(props: FeedProps<UT, AT, CT, RT, CRT, PT>) {
   const { analyticsClient, client, user, errorHandler, sharedFeedManagers } = useStreamContext<
     UT,

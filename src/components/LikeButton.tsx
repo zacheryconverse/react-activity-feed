@@ -12,7 +12,7 @@ export type LikeButtonProps<
   AT extends DefaultAT = DefaultAT,
   CT extends UR = UR,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = PropsWithElementAttributes<{
   /** The activity received from stream that should be liked when pressing the LikeButton. */
   activity?: EnrichedActivity<UT, AT, CT, RT, CRT>;
@@ -28,7 +28,7 @@ export const LikeButton = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   activity,
   reaction,

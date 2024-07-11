@@ -17,7 +17,7 @@ import { DefaultUT } from '../context/StreamApp';
 export type CommentItemProps<
   UT extends DefaultUT = DefaultUT,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = PropsWithElementAttributes<
   {
     comment: EnrichedReaction<RT, CRT, UT>;

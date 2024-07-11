@@ -10,7 +10,7 @@ export type SinglePostProps<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 > = FlatFeedProps<UT, AT, CT, RT, CRT, PT> & { activityId: string };
 
 /**
@@ -22,7 +22,7 @@ export function SinglePost<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({ options, activityId, doFeedRequest, ...props }: SinglePostProps<UT, AT, CT, RT, CRT, PT>) {
   return (
     <FlatFeed<UT, AT, CT, RT, CRT, PT>

@@ -15,7 +15,7 @@ export type CommentListProps<
   // @ts-expect-error
   CT extends UR = UR, // eslint-disable-line
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = {
   /** The ID of the activity for which these comments are */
   activityId: string;
@@ -45,7 +45,7 @@ export const CommentList = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   Paginator = LoadMorePaginator,
   CommentItem = DefaultCommentItem,
@@ -58,11 +58,7 @@ export const CommentList = <
     Paginator={Paginator}
     activityId={activityId}
     reactionKind="comment"
-    Reaction={({ reaction: comment }) => (
-      <>
-        {smartRender<CommentItemProps<UT, RT, CRT>>(CommentItem, { comment })}
-      </>
-    )}
+    Reaction={({ reaction: comment }) => <>{smartRender<CommentItemProps<UT, RT, CRT>>(CommentItem, { comment })}</>}
     activityPath={activityPath}
     oldestToNewest={oldestToNewest}
     reverseOrder={reverseOrder}

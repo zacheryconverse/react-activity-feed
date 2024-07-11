@@ -12,7 +12,7 @@ import { DefaultAT, DefaultUT } from '../context/StreamApp';
 
 export type CommentFieldProps<
   UT extends DefaultUT = DefaultUT,
-  AT extends DefaultAT = DefaultAT
+  AT extends DefaultAT = DefaultAT,
 > = PropsWithElementAttributes<
   {
     activity: EnrichedActivity<UT, AT>;

@@ -15,7 +15,7 @@ export type NotificationDropdownProps<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 > = PropsWithElementAttributes<
   {
     Icon?: ElementOrComponentOrLiteralType;
@@ -30,7 +30,7 @@ const NotificationDropdownInner = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   width,
   Footer,
@@ -83,7 +83,7 @@ export const NotificationDropdown = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   width = 475,
   Footer,

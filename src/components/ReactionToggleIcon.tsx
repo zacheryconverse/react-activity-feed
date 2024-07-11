@@ -9,7 +9,7 @@ import { PropsWithElementAttributes } from '../utils';
 type ReactionToggleIconProps<
   UT extends DefaultUT = DefaultUT,
   RT extends UR = UR,
-  CRT extends UR = UR
+  CRT extends UR = UR,
 > = PropsWithElementAttributes<
   {
     /** The icon to show when the user has done this reaction (e.g. a filled in heart) */

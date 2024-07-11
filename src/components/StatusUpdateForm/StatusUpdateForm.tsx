@@ -75,7 +75,7 @@ export function StatusUpdateForm<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   feedGroup = 'user',
   activityVerb = 'post',
@@ -185,6 +185,16 @@ export function StatusUpdateForm<
                 handleFiles={state.uploadNewFiles}
               />
             )}
+
+            {/* IGC Files Preview */}
+            {/* {state.igcs.order.length > 0 && (
+              <FilePreviewer
+                uploads={state.igcs.order.map((id) => state.igcs.data[id]) as FileUpload[]}
+                handleRemove={state.removeIgc}
+                handleRetry={(id) => state.uploadIgc(id, state.igcs.data[id])}
+                handleFiles={state.uploadNewFiles}
+              />
+            )} */}
           </PanelContent>
 
           <PanelFooter>

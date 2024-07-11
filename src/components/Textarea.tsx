@@ -72,7 +72,7 @@ export const Textarea = ({
   return (
     <ReactTextareaAutocomplete
       loadingComponent={LoadingIndicator}
-      // @ts-expect-error
+      // @ts-ignore
       trigger={{ ...emoji, ...trigger }}
       innerRef={
         innerRef &&

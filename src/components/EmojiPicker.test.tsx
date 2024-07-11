@@ -17,18 +17,18 @@ interface SupportedNimblePickerProps {
   title: string;
 }
 
-jest.mock(
-  'emoji-mart/dist/components/picker/nimble-picker.js',
-  // eslint-disable-next-line react/display-name
-  () => ({ i18n }: SupportedNimblePickerProps) => {
+jest.mock('emoji-mart/dist/components/picker/nimble-picker.js', () => {
+  const NimblePicker = ({ i18n }: SupportedNimblePickerProps) => {
     return (
       <div>
         emoji-picker-props
         <div>{JSON.stringify(i18n).replace(/\\"/g, '"')}</div>
       </div>
     );
-  },
-);
+  };
+  NimblePicker.displayName = 'NimblePicker'; // Assigning display name
+  return NimblePicker;
+});
 
 describe('EmojiPicker', () => {
   it('renders correctly with default props', () => {

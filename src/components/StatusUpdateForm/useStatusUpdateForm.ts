@@ -19,7 +19,7 @@ import { UploadState } from 'react-file-utils';
 import { NewActivity, OGAPIResponse, StreamClient, UR } from 'getstream';
 
 import { DefaultAT, DefaultUT, useStreamContext } from '../../context';
-import { parseIgcFile, extractFlightStatistics } from './igcParser';
+// import { parseIgcFile, extractFlightStatistics } from './igcParser';
 import { StatusUpdateFormProps } from './StatusUpdateForm';
 import {
   generateRandomId,
@@ -256,43 +256,44 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     });
   }, []);
 
-  const uploadNewIgc = useCallback(async (file: File) => {
+  // const uploadNewIgc = useCallback(async (file: File) => {
+  const uploadNewIgc = useCallback((file: File) => {
     const id = generateRandomId();
     setIgcs(({ data }) => {
       data[id] = { id, file, state: 'uploading' };
       return { data: { ...data }, order: [id] };
     });
 
-    try {
-      const igcContent = await file.text();
-      const igcData = parseIgcFile(igcContent);
-      console.log('igcData', igcData, 'file', file);
-      if (igcData) {
-        const flightStats = extractFlightStatistics(igcData);
-        const url = await client.files.upload(file);
-        console.log('url', url, 'flightStats', flightStats);
-        setIgcs((prevState) => {
-          prevState.data[id] = {
-            ...prevState.data[id],
-            url: url.file,
-            state: 'finished',
-            data: flightStats,
-          };
-          return { ...prevState };
-        });
-      } else {
-        setIgcs((prevState) => {
-          prevState.data[id].state = 'failed';
-          return { ...prevState };
-        });
-      }
-    } catch (error) {
-      logErr(error, 'upload-igc');
-      setIgcs((prevState) => {
-        prevState.data[id].state = 'failed';
-        return { ...prevState };
-      });
-    }
+    // try {
+    //   const igcContent = await file.text();
+    //   const igcData = parseIgcFile(igcContent);
+    //   console.log('igcData', igcData, 'file', file);
+    //   if (igcData) {
+    //     const flightStats = extractFlightStatistics(igcData);
+    //     const url = await client.files.upload(file);
+    //     console.log('url', url, 'flightStats', flightStats);
+    //     setIgcs((prevState) => {
+    //       prevState.data[id] = {
+    //         ...prevState.data[id],
+    //         url: url.file,
+    //         state: 'finished',
+    //         data: flightStats,
+    //       };
+    //       return { ...prevState };
+    //     });
+    //   } else {
+    //     setIgcs((prevState) => {
+    //       prevState.data[id].state = 'failed';
+    //       return { ...prevState };
+    //     });
+    //   }
+    // } catch (error) {
+    //   logErr(error, 'upload-igc');
+    //   setIgcs((prevState) => {
+    //     prevState.data[id].state = 'failed';
+    //     return { ...prevState };
+    //   });
+    // }
   }, []);
 
   const uploadImage = useCallback(async (id: string, img: ImageUploadState) => {

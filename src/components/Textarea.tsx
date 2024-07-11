@@ -1,10 +1,10 @@
 import React, { useMemo } from 'react';
 import classNames from 'classnames';
-import ReactTextareaAutocomplete, { TriggerType, SettingType } from '@webscopeio/react-textarea-autocomplete';
+import ReactTextareaAutocomplete, { TriggerType } from '@webscopeio/react-textarea-autocomplete';
 import { LoadingIndicator } from 'react-file-utils';
 import { BaseEmoji } from 'emoji-mart';
+import { UR } from 'getstream';
 import { Data as EmojiDataSet } from 'emoji-mart';
-// @ts-expect-error
 import EmojiIndex from 'emoji-mart/dist/utils/emoji-index/nimble-emoji-index';
 import defaultEmojiData from '../utils/emojiData';
 import { PropsWithElementAttributes } from '../utils';
@@ -25,11 +25,11 @@ export type TextareaProps = PropsWithElementAttributes<{
   /** An extra trigger for ReactTextareaAutocomplete, this can be used to show
    * a menu when typing @xxx or #xxx, in addition to the emoji menu when typing :xxx
    */
-  trigger?: TriggerType<Record<string, unknown>>;
+  trigger?: TriggerType<UR>;
   value?: string;
 }>;
 
-const emojiTrigger = (emojiData: EmojiDataSet): TriggerType<BaseEmoji> => {
+const emojiTrigger: (emojiData: EmojiDataSet) => TriggerType<BaseEmoji> = (emojiData) => {
   const emojiIndex = new EmojiIndex(emojiData);
 
   return {
@@ -49,7 +49,7 @@ const emojiTrigger = (emojiData: EmojiDataSet): TriggerType<BaseEmoji> => {
           </div>
         );
       },
-    } as SettingType<BaseEmoji>,
+    },
   };
 };
 
@@ -66,13 +66,13 @@ export const Textarea = ({
   className,
   style,
 }: TextareaProps) => {
-  const emoji = useMemo(() => emojiTrigger(emojiData), [emojiData]);
+  const emoji = useMemo(() => emojiTrigger(emojiData), []);
 
   return (
     <ReactTextareaAutocomplete
       loadingComponent={LoadingIndicator}
-      // @ts-ignore
-      trigger={{ ...emoji, ...(trigger as unknown as TriggerType<string | BaseEmoji>) }}
+      // @ts-expect-error
+      trigger={{ ...emoji, ...trigger }}
       innerRef={
         innerRef &&
         ((el: HTMLTextAreaElement) => {

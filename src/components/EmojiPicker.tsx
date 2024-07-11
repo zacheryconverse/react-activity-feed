@@ -1,7 +1,6 @@
 import React, { useRef, useState } from 'react';
 import classNames from 'classnames';
 import { Data as EmojiDataSet, EmojiData, I18n } from 'emoji-mart';
-// @ts-expect-error
 import NimbleEmojiPicker from 'emoji-mart/dist/components/picker/nimble-picker.js';
 
 import defaultEmojiData from '../utils/emojiData';

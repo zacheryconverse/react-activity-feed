@@ -101,6 +101,7 @@ export async function dataTransferItemsToFiles(items?: DataTransferItemList) {
     const item = items[i];
     if (item.type === 'text/html') {
       blobPromises.push(
+        // @ts-expect-error
         new Promise((accept) => {
           item.getAsString(async (s) => {
             const doc = parser.parseFromString(s, 'text/html');
@@ -113,6 +114,7 @@ export async function dataTransferItemsToFiles(items?: DataTransferItemList) {
                 continue;
               }
               imagePromises.push(
+                // @ts-expect-error
                 (async () => {
                   let res;
                   try {

@@ -3,7 +3,6 @@ import classNames from 'classnames';
 import ReactTextareaAutocomplete, { TriggerType } from '@webscopeio/react-textarea-autocomplete';
 import { LoadingIndicator } from 'react-file-utils';
 import { BaseEmoji } from 'emoji-mart';
-import { UR } from 'getstream';
 import { Data as EmojiDataSet } from 'emoji-mart';
 import EmojiIndex from 'emoji-mart/dist/utils/emoji-index/nimble-emoji-index';
 import defaultEmojiData from '../utils/emojiData';
@@ -25,7 +24,8 @@ export type TextareaProps = PropsWithElementAttributes<{
   /** An extra trigger for ReactTextareaAutocomplete, this can be used to show
    * a menu when typing @xxx or #xxx, in addition to the emoji menu when typing :xxx
    */
-  trigger?: TriggerType<UR>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  trigger?: any;
   value?: string;
 }>;
 
@@ -70,8 +70,8 @@ export const Textarea = ({
 
   return (
     <ReactTextareaAutocomplete
-      loadingComponent={LoadingIndicator}
-      // @ts-expect-error
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      loadingComponent={LoadingIndicator as any}
       trigger={{ ...emoji, ...trigger }}
       innerRef={
         innerRef &&

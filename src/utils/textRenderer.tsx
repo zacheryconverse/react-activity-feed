@@ -1,7 +1,6 @@
 import React from 'react';
 import _truncate from 'lodash/truncate';
 import * as linkify from 'linkifyjs';
-// @ts-expect-error
 import linkifyMention from 'linkifyjs/plugins/mention';
 
 // 'linkifyjs/plugins/hashtag';
@@ -11,7 +10,6 @@ function linkifyHashtag(linkify: any) {
   const MultiToken = linkify.parser.TOKENS.Base; // Base Multi token class
   const S_START = linkify.parser.start;
   function HASHTAG(value: unknown) {
-    // @ts-expect-error
     this.v = value;
   }
   linkify.inherits(MultiToken, HASHTAG, { type: 'hashtag', isLink: true });

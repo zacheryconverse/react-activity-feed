@@ -26,7 +26,7 @@ export type TextareaProps = PropsWithElementAttributes<{
   /** An extra trigger for ReactTextareaAutocomplete, this can be used to show
    * a menu when typing @xxx or #xxx, in addition to the emoji menu when typing :xxx
    */
-  trigger?: TriggerType<UR>;
+  trigger?: TriggerType<Record<string, unknown>>;
   value?: string;
 }>;
 
@@ -72,8 +72,8 @@ export const Textarea = ({
   return (
     <ReactTextareaAutocomplete
       loadingComponent={LoadingIndicator}
-      // @ts-ignore
-      trigger={{ ...emoji, ...trigger }}
+      // @ts-expect-error
+      trigger={{ ...emoji, ...(trigger as unknown as TriggerType<BaseEmoji>) }}
       innerRef={
         innerRef &&
         ((el: HTMLTextAreaElement) => {

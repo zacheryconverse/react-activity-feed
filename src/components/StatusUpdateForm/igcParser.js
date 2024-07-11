@@ -2,9 +2,10 @@ import { parse } from 'igc-parser';
 
 export const parseIgcFile = (igcFileContent) => {
   try {
-    return parse(igcFileContent);
-    // const flightData = parse(igcFileContent);
-    // return flightData;
+    // return parse(igcFileContent);
+    const flightData = parse(igcFileContent);
+    console.log('flightData: ', flightData);
+    return flightData;
   } catch (error) {
     console.error('Error parsing IGC file:', error);
     return null;

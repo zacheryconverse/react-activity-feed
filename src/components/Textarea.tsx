@@ -76,7 +76,7 @@ export const Textarea = ({
       trigger={{ ...emoji, ...trigger }}
       innerRef={
         innerRef &&
-        ((el) => {
+        ((el: HTMLTextAreaElement) => {
           if (typeof innerRef === 'function') {
             innerRef(el);
           } else if (innerRef !== null) {

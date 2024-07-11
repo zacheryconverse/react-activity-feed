@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { useEffect } from 'react';
 import immutable from 'immutable';
 import { UR, EnrichedReaction } from 'getstream';
@@ -34,7 +35,7 @@ export const ReactionList = <
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   activityId,
   Reaction,

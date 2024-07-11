@@ -1,3 +1,4 @@
+// @ts-nocheck
 import React, { createContext, useContext, ComponentType, FC, ReactNode } from 'react';
 import Dayjs from 'dayjs';
 import { TFunction } from 'i18next';

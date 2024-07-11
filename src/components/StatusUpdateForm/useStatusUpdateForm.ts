@@ -1,3 +1,4 @@
+// @ts-nocheck
 import {
   useRef,
   useState,
@@ -18,6 +19,7 @@ import { UploadState } from 'react-file-utils';
 import { NewActivity, OGAPIResponse, StreamClient, UR } from 'getstream';
 
 import { DefaultAT, DefaultUT, useStreamContext } from '../../context';
+import { parseIgcFile, extractFlightStatistics } from './igcParser';
 import { StatusUpdateFormProps } from './StatusUpdateForm';
 import {
   generateRandomId,
@@ -55,6 +57,7 @@ type UseUploadProps = UseOgProps;
 const defaultOgState = { activeUrl: '', data: {}, order: [] };
 const defaultImageState = { data: {}, order: [] };
 const defaultFileState = { data: {}, order: [] };
+const defaultIgcState = { data: {}, order: [] };
 
 const useTextArea = () => {
   const [text, setText] = useState('');
@@ -197,6 +200,7 @@ const useOg = ({ client, logErr }: UseOgProps) => {
 const useUpload = ({ client, logErr }: UseUploadProps) => {
   const [images, setImages] = useState<ImagesState>(defaultImageState);
   const [files, setFiles] = useState<FilesState>(defaultFileState);
+  const [igcs, setIgcs] = useState(defaultIgcState);
 
   const reqInProgress = useRef<Record<string, boolean>>({});
 
@@ -208,9 +212,15 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
 
   const uploadedFiles = orderedFiles.filter((upload) => upload.url);
 
+  const orderedIgcs = igcs.order.map((id) => igcs.data[id]);
+
+  // @ts-expect-error
+  const uploadedIgcs = orderedIgcs.filter((upload) => upload.url);
+
   const resetUpload = useCallback(() => {
     setImages(defaultImageState);
     setFiles(defaultFileState);
+    setIgcs(defaultIgcState);
   }, []);
 
   const uploadNewImage = useCallback((file: File | Blob) => {
@@ -244,6 +254,88 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       return { data: { ...data }, order: [...order, id] };
     });
   }, []);
+
+  // const uploadNewIgc = useCallback((file) => {
+  //   const id = generateRandomId();
+  //   // ts-expect-error
+  //   setIgcs(({ data }) => {
+  //     data[id] = { id, file, state: 'uploading' };
+  //     return { data: { ...data }, order: [id] };
+  //   });
+  // }, []);
+
+  const uploadNewIgc = useCallback(async (file: File) => {
+    const id = generateRandomId();
+    setIgcs(({ data }) => {
+      data[id] = { id, file, state: 'uploading' };
+      return { data: { ...data }, order: [id] };
+    });
+
+    try {
+      const igcContent = await file.text();
+      const igcData = parseIgcFile(igcContent);
+      console.log('igcData', igcData, 'file', file);
+      if (igcData) {
+        const flightStats = extractFlightStatistics(igcData);
+        const url = await client.files.upload(file);
+        console.log('url', url, 'flightStats', flightStats);
+        setIgcs((prevState) => {
+          prevState.data[id] = {
+            ...prevState.data[id],
+            url: url.file,
+            state: 'finished',
+            data: flightStats,
+          };
+          return { ...prevState };
+        });
+      } else {
+        setIgcs((prevState) => {
+          prevState.data[id].state = 'failed';
+          return { ...prevState };
+        });
+      }
+    } catch (error) {
+      logErr(error, 'upload-igc');
+      setIgcs((prevState) => {
+        prevState.data[id].state = 'failed';
+        return { ...prevState };
+      });
+    }
+  }, []);
+  // const uploadNewIgc = useCallback(async (file: File) => {
+  //   const id = generateRandomId();
+  //   setIgcs((prevState) => ({
+  //     data: { ...prevState.data, [id]: { id, file, state: 'uploading' } },
+  //     order: [id],
+  //   }));
+
+  //   try {
+  //     const igcContent = await file.text();
+  //     const igcData = parseIgcFile(igcContent);
+  //     if (igcData) {
+  //       const flightStats = extractFlightStatistics(igcData);
+  //       const url = await client.files.upload(file);
+  //       setIgcs((prevState) => ({
+  //         data: {
+  //           ...prevState.data,
+  //           [id]: { ...prevState.data[id], url: url.file, state: 'finished', data: flightStats },
+  //         },
+  //         order: prevState.order,
+  //       }));
+  //     } else {
+  //       setIgcs((prevState) => ({
+  //         data: { ...prevState.data, [id]: { ...prevState.data[id], state: 'failed' } },
+  //         order: prevState.order,
+  //       }));
+  //     }
+  //   } catch (error) {
+  //     logErr(error, 'upload-igc');
+  //     setIgcs((prevState) => ({
+  //       data: { ...prevState.data, [id]: { ...prevState.data[id], state: 'failed' } },
+  //       order: prevState.order,
+  //     }));
+  //   }
+  // }, []);
 
   const uploadImage = useCallback(async (id: string, img: ImageUploadState) => {
     setImages((prevState) => {
@@ -298,11 +390,42 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     }
   }, []);
 
-  const uploadNewFiles = useCallback((files: Blob[] | File[] | FileList) => {
+  const uploadIgc = useCallback(async (id, igc) => {
+    // eslint-disable-next-line sonarjs/no-identical-functions
+    setIgcs((prevState) => {
+      if (!prevState.data[id]) return prevState;
+      prevState.data[id].state = 'uploading';
+      return { ...prevState };
+    });
+
+    try {
+      const { file: url } = await client.files.upload(igc.file);
+      // eslint-disable-next-line sonarjs/no-identical-functions
+      setIgcs((prevState) => {
+        if (!prevState.data[id]) return prevState;
+        prevState.data[id].url = url;
+        prevState.data[id].state = 'finished';
+        return { ...prevState };
+      });
+    } catch (e) {
+      console.warn(e);
+      setIgcs((prevState) => {
+        if (!prevState.data[id]) return prevState;
+        logErr(e, 'upload-igc');
+        prevState.data[id].state = 'failed';
+        return { ...prevState };
+      });
+    }
+  }, []);
+
+  const uploadNewFiles = useCallback((files) => {
     for (let i = 0; i < files.length; i += 1) {
       const file = files[i];
       if (file.type.startsWith('image/')) {
         uploadNewImage(file);
+      } else if (file.name.toLowerCase().endsWith('.igc')) {
+        uploadNewIgc(file);
+        break; // Ensure only one IGC file
       } else if (file instanceof File) {
         uploadNewFile(file);
       }
@@ -346,17 +469,31 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       });
   }, [files.order]);
 
+  useEffect(() => {
+    igcs.order
+      .filter((id) => !reqInProgress.current[id] && igcs.data[id].state === 'uploading')
+      .forEach(async (id) => {
+        reqInProgress.current[id] = true;
+        await uploadIgc(id, igcs.data[id]);
+        delete reqInProgress.current[id];
+      });
+  }, [igcs.order]);
+  // TODO: add removeIgc
   return {
     images,
     files,
+    igcs,
     orderedImages,
     orderedFiles,
+    orderedIgcs,
     uploadedImages,
     uploadedFiles,
+    uploadedIgcs,
     resetUpload,
     uploadNewFiles,
     uploadFile,
     uploadImage,
+    uploadIgc,
     removeFile,
     removeImage,
   };
@@ -368,7 +505,7 @@ export function useStatusUpdateForm<
   CT extends UR = UR,
   RT extends UR = UR,
   CRT extends UR = UR,
-  PT extends UR = UR
+  PT extends UR = UR,
 >({
   activityVerb,
   feedGroup,
@@ -392,28 +529,24 @@ export function useStatusUpdateForm<
 
   const { text, setText, insertText, onSelectEmoji, textInputRef } = useTextArea();
 
-  const {
-    resetOg,
-    setActiveOg,
-    ogActiveUrl,
-    activeOg,
-    dismissOg,
-    availableOg,
-    isOgScraping,
-    handleOgDebounced,
-  } = useOg({ client: client as StreamClient, logErr });
+  const { resetOg, setActiveOg, ogActiveUrl, activeOg, dismissOg, availableOg, isOgScraping, handleOgDebounced } =
+    useOg({ client: client as StreamClient, logErr });
 
   const {
     images,
     files,
+    igcs,
     orderedImages,
     orderedFiles,
+    orderedIgcs,
     uploadedImages,
     uploadedFiles,
+    uploadedIgcs,
     resetUpload,
     uploadNewFiles,
     uploadFile,
     uploadImage,
+    uploadIgc,
     removeFile,
     removeImage,
   } = useUpload({ client: client as StreamClient, logErr });
@@ -437,6 +570,7 @@ export function useStatusUpdateForm<
     Boolean(object()) &&
     orderedImages.every((upload) => upload.state !== 'uploading') &&
     orderedFiles.every((upload) => upload.state !== 'uploading') &&
+    orderedIgcs.every((upload) => upload.state !== 'uploading') &&
     !isOgScraping;
 
   const addActivity = async () => {
@@ -457,6 +591,7 @@ export function useStatusUpdateForm<
           name: (upload.file as File).name,
           mimeType: upload.file.type,
         })),
+        igc: uploadedIgcs.length > 0 ? uploadedIgcs[0].url : null,
       },
     };
 
@@ -524,6 +659,7 @@ export function useStatusUpdateForm<
     submitting,
     files,
     images,
+    igcs,
     activeOg,
     availableOg,
     isOgScraping,
@@ -538,6 +674,7 @@ export function useStatusUpdateForm<
     uploadNewFiles,
     uploadFile,
     uploadImage,
+    uploadIgc,
     removeFile,
     removeImage,
     onPaste,

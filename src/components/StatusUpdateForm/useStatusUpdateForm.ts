@@ -19,7 +19,7 @@ import { UploadState } from 'react-file-utils';
 import { NewActivity, OGAPIResponse, StreamClient, UR } from 'getstream';
 
 import { DefaultAT, DefaultUT, useStreamContext } from '../../context';
-// import { parseIgcFile, extractFlightStatistics } from './igcParser';
+import { parseIgcFile, extractFlightStatistics } from './igcParser';
 import { StatusUpdateFormProps } from './StatusUpdateForm';
 import {
   generateRandomId,
@@ -44,11 +44,15 @@ export type FileUploadState = {
 
 export type ImageUploadState = FileUploadState & { previewUri?: string };
 
+type VideoUploadState = FileUploadState & { previewUri?: string };
+
 type OgState = { activeUrl: string; data: Record<string, Og>; order: string[] };
 
 type ImagesState = { data: Record<string, ImageUploadState>; order: string[] };
 
 type FilesState = { data: Record<string, FileUploadState>; order: string[] };
+
+type VideosState = { data: Record<string, VideoUploadState>; order: string[] };
 
 type IgcState = { data: Record<string, FileUploadState>; order: string[] };
 
@@ -59,6 +63,7 @@ type UseUploadProps = UseOgProps;
 const defaultOgState = { activeUrl: '', data: {}, order: [] };
 const defaultImageState = { data: {}, order: [] };
 const defaultFileState = { data: {}, order: [] };
+const defaultVideoState = { data: {}, order: [] };
 const defaultIgcState = { data: {}, order: [] };
 
 const useTextArea = () => {
@@ -202,6 +207,7 @@ const useOg = ({ client, logErr }: UseOgProps) => {
 const useUpload = ({ client, logErr }: UseUploadProps) => {
   const [images, setImages] = useState<ImagesState>(defaultImageState);
   const [files, setFiles] = useState<FilesState>(defaultFileState);
+  const [videos, setVideos] = useState<VideosState>(defaultVideoState);
   const [igcs, setIgcs] = useState<IgcState>(defaultIgcState);
 
   const reqInProgress = useRef<Record<string, boolean>>({});
@@ -214,6 +220,10 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
 
   const uploadedFiles = orderedFiles.filter((upload) => upload.url);
 
+  const orderedVideos = videos.order.map((id) => videos.data[id]);
+
+  const uploadedVideos = orderedVideos.filter((upload) => upload.url);
+
   const orderedIgcs = igcs.order.map((id) => igcs.data[id]);
 
   const uploadedIgcs = orderedIgcs.filter((upload) => upload.url);
@@ -221,6 +231,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
   const resetUpload = useCallback(() => {
     setImages(defaultImageState);
     setFiles(defaultFileState);
+    setVideos(defaultVideoState);
     setIgcs(defaultIgcState);
   }, []);
 
@@ -248,6 +259,29 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     }
   }, []);
 
+  const uploadNewVideo = useCallback((file: File | Blob) => {
+    const id = generateRandomId();
+    setVideos(({ order, data }) => {
+      data[id] = { id, file, state: 'uploading' };
+      return { data: { ...data }, order: [...order, id] };
+    });
+
+    if (FileReader) {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const previewUri = event.target?.result as string;
+        if (!previewUri) return;
+        // eslint-disable-next-line sonarjs/no-identical-functions
+        setVideos((prevState) => {
+          if (!prevState.data[id]) return prevState;
+          prevState.data[id].previewUri = previewUri;
+          return { ...prevState, data: { ...prevState.data } };
+        });
+      };
+      reader.readAsDataURL(file);
+    }
+  }, []);
+
   const uploadNewFile = useCallback((file: File) => {
     const id = generateRandomId();
     setFiles(({ order, data }) => {
@@ -256,7 +290,6 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     });
   }, []);
 
-  // const uploadNewIgc = useCallback(async (file: File) => {
   const uploadNewIgc = useCallback((file: File) => {
     const id = generateRandomId();
     setIgcs(({ data }) => {
@@ -264,36 +297,36 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       return { data: { ...data }, order: [id] };
     });
 
-    // try {
-    //   const igcContent = await file.text();
-    //   const igcData = parseIgcFile(igcContent);
-    //   console.log('igcData', igcData, 'file', file);
-    //   if (igcData) {
-    //     const flightStats = extractFlightStatistics(igcData);
-    //     const url = await client.files.upload(file);
-    //     console.log('url', url, 'flightStats', flightStats);
-    //     setIgcs((prevState) => {
-    //       prevState.data[id] = {
-    //         ...prevState.data[id],
-    //         url: url.file,
-    //         state: 'finished',
-    //         data: flightStats,
-    //       };
-    //       return { ...prevState };
-    //     });
-    //   } else {
-    //     setIgcs((prevState) => {
-    //       prevState.data[id].state = 'failed';
-    //       return { ...prevState };
-    //     });
-    //   }
-    // } catch (error) {
-    //   logErr(error, 'upload-igc');
-    //   setIgcs((prevState) => {
-    //     prevState.data[id].state = 'failed';
-    //     return { ...prevState };
-    //   });
-    // }
+    try {
+      const igcContent = await file.text();
+      const igcData = parseIgcFile(igcContent);
+      console.log('igcData', igcData, 'file', file);
+      if (igcData) {
+        const flightStats = extractFlightStatistics(igcData);
+        const url = await client.files.upload(file);
+        console.log('url', url, 'flightStats', flightStats);
+        setIgcs((prevState) => {
+          prevState.data[id] = {
+            ...prevState.data[id],
+            url: url.file,
+            state: 'finished',
+            data: flightStats,
+          };
+          return { ...prevState };
+        });
+      } else {
+        setIgcs((prevState) => {
+          prevState.data[id].state = 'failed';
+          return { ...prevState };
+        });
+      }
+    } catch (error) {
+      logErr(error, 'upload-igc');
+      setIgcs((prevState) => {
+        prevState.data[id].state = 'failed';
+        return { ...prevState };
+      });
+    }
   }, []);
 
   const uploadImage = useCallback(async (id: string, img: ImageUploadState) => {
@@ -313,10 +346,37 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       });
     } catch (e) {
       console.warn(e);
-
       setImages((prevState) => {
         if (!prevState.data[id]) return prevState;
         logErr(e, 'upload-image');
+        prevState.data[id].state = 'failed';
+        return { ...prevState };
+      });
+    }
+  }, []);
+
+  const uploadVideo = useCallback(async (id: string, vid: VideoUploadState) => {
+    // eslint-disable-next-line sonarjs/no-identical-functions
+    setVideos((prevState) => {
+      if (!prevState.data[id]) return prevState;
+      prevState.data[id].state = 'uploading';
+      return { ...prevState };
+    });
+
+    try {
+      const { file: url } = await client.files.upload(vid.file as File);
+      // eslint-disable-next-line sonarjs/no-identical-functions
+      setVideos((prevState) => {
+        if (!prevState.data[id]) return prevState;
+        prevState.data[id].url = url;
+        prevState.data[id].state = 'finished';
+        return { ...prevState };
+      });
+    } catch (e) {
+      console.warn(e);
+      setVideos((prevState) => {
+        if (!prevState.data[id]) return prevState;
+        logErr(e, 'upload-video');
         prevState.data[id].state = 'failed';
         return { ...prevState };
       });
@@ -382,6 +442,8 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       const file = files[i];
       if (file.type.startsWith('image/')) {
         uploadNewImage(file);
+      } else if (file.type.startsWith('video/')) {
+        uploadNewVideo(file);
       } else if (file.name.toLowerCase().endsWith('.igc')) {
         uploadNewIgc(file);
         break; // Ensure only one IGC file
@@ -402,6 +464,24 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
   const removeFile = useCallback((id: string) => {
     // eslint-disable-next-line sonarjs/no-identical-functions
     setFiles((prevState) => {
+      prevState.order = prevState.order.filter((oid) => id !== oid);
+      delete prevState.data[id];
+      return { ...prevState };
+    });
+  }, []);
+
+  const removeVideo = useCallback((id: string) => {
+    // eslint-disable-next-line sonarjs/no-identical-functions
+    setVideos((prevState) => {
+      prevState.order = prevState.order.filter((oid) => id !== oid);
+      delete prevState.data[id];
+      return { ...prevState };
+    });
+  }, []);
+
+  const removeIgc = useCallback((id: string) => {
+    // eslint-disable-next-line sonarjs/no-identical-functions
+    setIgcs((prevState) => {
       prevState.order = prevState.order.filter((oid) => id !== oid);
       delete prevState.data[id];
       return { ...prevState };
@@ -440,21 +520,26 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
 
   return {
     images,
+    videos,
     files,
     igcs,
     orderedImages,
     orderedFiles,
     orderedIgcs,
     uploadedImages,
+    uploadedVideos,
     uploadedFiles,
     uploadedIgcs,
     resetUpload,
     uploadNewFiles,
     uploadFile,
     uploadImage,
+    uploadVideo,
     uploadIgc,
     removeFile,
     removeImage,
+    removeVideo,
+    removeIgc,
   };
 };
 
@@ -494,20 +579,26 @@ export function useStatusUpdateForm<
   const {
     images,
     files,
+    videos,
     igcs,
     orderedImages,
     orderedFiles,
+    orderedVideos,
     orderedIgcs,
     uploadedImages,
     uploadedFiles,
+    uploadedVideos,
     uploadedIgcs,
     resetUpload,
     uploadNewFiles,
     uploadFile,
     uploadImage,
+    uploadVideo,
     uploadIgc,
     removeFile,
     removeImage,
+    removeVideo,
+    removeIgc,
   } = useUpload({ client: client as StreamClient, logErr });
 
   const resetState = useCallback(() => {
@@ -521,6 +612,9 @@ export function useStatusUpdateForm<
     for (const image of orderedImages) {
       if (image.url) return image.url;
     }
+    for (const video of orderedVideos) {
+      if (video.url) return video.url;
+    }
     return text.trim();
   };
 
@@ -529,6 +623,7 @@ export function useStatusUpdateForm<
     Boolean(object()) &&
     orderedImages.every((upload) => upload.state !== 'uploading') &&
     orderedFiles.every((upload) => upload.state !== 'uploading') &&
+    orderedVideos.every((upload) => upload.state !== 'uploading') &&
     orderedIgcs.every((upload) => upload.state !== 'uploading') &&
     !isOgScraping;
 
@@ -548,6 +643,7 @@ export function useStatusUpdateForm<
           name: (upload.file as File).name,
           mimeType: upload.file.type,
         })),
+        videos: uploadedVideos.map((video) => video.url).filter(Boolean) as string[],
         igc: uploadedIgcs.map((igc) => igc.url).filter(Boolean) as string[],
       },
     };
@@ -616,6 +712,7 @@ export function useStatusUpdateForm<
     submitting,
     files,
     images,
+    videos,
     igcs,
     activeOg,
     availableOg,
@@ -631,9 +728,12 @@ export function useStatusUpdateForm<
     uploadNewFiles,
     uploadFile,
     uploadImage,
+    uploadVideo,
     uploadIgc,
     removeFile,
     removeImage,
+    removeVideo,
+    removeIgc,
     onPaste,
   };
 }

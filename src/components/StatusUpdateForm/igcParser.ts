@@ -1,23 +1,41 @@
 import { parse } from 'igc-parser';
 
-export const parseIgcFile = (igcFileContent) => {
+export interface Fix {
+  gpsAltitude: number;
+  latitude: number;
+  longitude: number;
+  time: string;
+}
+
+export interface FlightData {
+  fixes: Fix[];
+  date?: Date;
+  gliderId?: string;
+  pilot?: string;
+  task?: string;
+}
+
+export const parseIgcFile = (igcFileContent: string): FlightData | null => {
   try {
-    // return parse(igcFileContent);
-    const flightData = parse(igcFileContent);
-    console.log('flightData: ', flightData);
-    return flightData;
+    return parse(igcFileContent) as unknown as FlightData;
   } catch (error) {
     console.error('Error parsing IGC file:', error);
     return null;
   }
 };
 
+export interface FlightStatistics {
+  flightDuration: string;
+  maxAltitude: number;
+  totalDistance: number;
+}
+
 /**
  * Extracts flight statistics from the given flight data.
  * @param {FlightData} flightData - The flight data obtained from parsing an IGC file.
  * @returns {FlightStatistics | null} An object containing various flight statistics or null if data is invalid.
  */
-export const extractFlightStatistics = (flightData) => {
+export const extractFlightStatistics = (flightData: FlightData): FlightStatistics | null => {
   if (!flightData || !flightData.fixes || flightData.fixes.length === 0) {
     console.error('Invalid flight data:', flightData);
     return null;
@@ -26,7 +44,7 @@ export const extractFlightStatistics = (flightData) => {
   const { fixes } = flightData;
 
   // Ensure the time is in the correct format
-  const parseTime = (timeStr) => {
+  const parseTime = (timeStr: string): Date | null => {
     const regex = /(\d{2}):(\d{2}):(\d{2})/;
     const match = timeStr.match(regex);
     if (match) {
@@ -47,7 +65,7 @@ export const extractFlightStatistics = (flightData) => {
     return null;
   }
 
-  const formatDuration = (milliseconds) => {
+  const formatDuration = (milliseconds: number): string => {
     const totalMinutes = Math.floor(milliseconds / 60000);
     const hours = Math.floor(totalMinutes / 60);
     const minutes = totalMinutes % 60;
@@ -62,8 +80,8 @@ export const extractFlightStatistics = (flightData) => {
   const maxAltitude = fixes.reduce((max, fix) => Math.max(max, fix.gpsAltitude), fixes[0].gpsAltitude);
 
   // Calculate total distance flown using the Haversine formula.
-  const haversineDistance = (lat1, lon1, lat2, lon2) => {
-    const toRadians = (deg) => deg * (Math.PI / 180);
+  const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
+    const toRadians = (deg: number): number => deg * (Math.PI / 180);
     const R = 6371; // Earth's radius in kilometers
 
     const dLat = toRadians(lat2 - lat1);

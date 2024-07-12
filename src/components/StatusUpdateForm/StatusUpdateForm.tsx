@@ -14,6 +14,8 @@ import {
 import { DefaultAT, DefaultUT, useTranslationContext } from '../../context';
 import { ElementOrComponentOrLiteralType, PropsWithElementAttributes, smartRender } from '../../utils';
 import { useStatusUpdateForm } from './useStatusUpdateForm';
+import VideoPreviewer from './VideoPreviewer';
+import VideoUploadButton from './VideoUploadButton';
 import { Panel, PanelContent, PanelFooter, PanelHeading } from '../Panel';
 import { Textarea as DefaultTextarea, TextareaProps } from '../Textarea';
 import { Avatar } from '../Avatar';
@@ -186,15 +188,24 @@ export function StatusUpdateForm<
               />
             )}
 
-            {/* IGC Files Preview */}
-            {/* {state.igcs.order.length > 0 && (
+            {state.igcs.order.length > 0 && (
               <FilePreviewer
                 uploads={state.igcs.order.map((id) => state.igcs.data[id]) as FileUpload[]}
                 handleRemove={state.removeIgc}
                 handleRetry={(id) => state.uploadIgc(id, state.igcs.data[id])}
                 handleFiles={state.uploadNewFiles}
               />
-            )} */}
+            )}
+
+            {state.videos.order.length > 0 && (
+              <VideoPreviewer
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                videoUploads={state.videos.order.map((id) => state.videos.data[id]) as any}
+                handleRemove={state.removeVideo}
+                handleRetry={(id) => state.uploadVideo(id, state.videos.data[id])}
+                handleFiles={state.uploadNewFiles}
+              />
+            )}
           </PanelContent>
 
           <PanelFooter>
@@ -205,6 +216,9 @@ export function StatusUpdateForm<
                 </div>
                 <div style={{ marginRight: '32px', display: 'inline-block' }}>
                   <FileUploadButton handleFiles={state.uploadNewFiles} multiple />
+                </div>
+                <div style={{ marginRight: '32px', display: 'inline-block' }}>
+                  <VideoUploadButton handleFiles={state.uploadNewFiles} multiple />
                 </div>
                 <EmojiPicker onSelect={state.onSelectEmoji} emojiData={emojiData} i18n={emojiI18n} />
                 {FooterItem}

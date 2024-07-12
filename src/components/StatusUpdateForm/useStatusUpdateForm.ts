@@ -520,7 +520,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
 
   return {
     images,
-    videos = [],
+    videos,
     files,
     igcs,
     orderedImages,
@@ -580,7 +580,7 @@ export function useStatusUpdateForm<
   const {
     images,
     files,
-    videos = [],
+    videos,
     igcs,
     orderedImages,
     orderedFiles,
@@ -713,7 +713,7 @@ export function useStatusUpdateForm<
     submitting,
     files,
     images,
-    videos = [],
+    videos,
     igcs,
     activeOg,
     availableOg,

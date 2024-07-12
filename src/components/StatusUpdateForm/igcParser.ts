@@ -49,7 +49,7 @@ export interface FlightStatistics {
  * @param {FlightData} flightData - The flight data obtained from parsing an IGC file.
  * @returns {FlightStatistics | null} An object containing various flight statistics or null if data is invalid.
  */
-export const extractFlightStatistics = (flightData: FlightData): FlightStatistics | null => {
+export const extractFlightStatistics = (flightData: FlightData, igcContent: string): FlightStatistics | null => {
   if (!flightData || !flightData.fixes || flightData.fixes.length === 0) {
     console.error('Invalid flight data:', flightData);
     return null;

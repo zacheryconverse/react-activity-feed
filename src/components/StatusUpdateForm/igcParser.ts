@@ -112,7 +112,7 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
   let maxAltitudeGain = 0;
   let maxClimbRate = -Infinity;
   let maxSinkRate = Infinity;
-  let totalDuration = 0;
+  let freeDistance = 0;
 
   const standardizedPeriod = 10; // seconds
   let altitudeGain = 0;
@@ -143,11 +143,11 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
 
     maxAltitudeGain = Math.max(maxAltitudeGain, altitudeGain);
 
-    totalDuration += duration;
+    freeDistance += duration;
   }
 
   freeDistance = parseFloat(totalDistance.toFixed(2));
-  const avgSpeed = totalDistance / (totalDuration / 3600); // km/h
+  const avgSpeed = totalDistance / (freeDistance / 3600); // km/h
   const flight = solver(igcContent, scoringRules.XContest).next().value;
   const score = flight?.score;
 

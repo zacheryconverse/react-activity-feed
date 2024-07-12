@@ -19,7 +19,7 @@ import { UploadState } from 'react-file-utils';
 import { NewActivity, OGAPIResponse, StreamClient, UR } from 'getstream';
 
 import { DefaultAT, DefaultUT, useStreamContext } from '../../context';
-import { parseIgcFile, extractFlightStatistics } from './igcParser';
+import { parseIgcFile, extractFlightStatistics, FlightStatistics } from './igcParser';
 import { StatusUpdateFormProps } from './StatusUpdateForm';
 import {
   generateRandomId,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // @ts-nocheck
 import {
   useRef,
@@ -39,7 +40,7 @@ export type FileUploadState = {
   file: File | Blob;
   id: string;
   state: UploadState;
-  data?: FlightStatistics;
+  data?: any;
   url?: string;
 };
 
@@ -573,7 +574,7 @@ export function useStatusUpdateForm<
             data: igc.data,
             url: igc.url,
           }))
-          .filter(Boolean) as { data: FlightStatistics; url: string }[],
+          .filter(Boolean) as { data: any; url: string }[],
       },
     };
 

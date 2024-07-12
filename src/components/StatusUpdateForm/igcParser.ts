@@ -105,6 +105,8 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
       fixes[i - 1].longitude,
     );
   }
+
+  totalDistance = parseFloat(totalDistance.toFixed(2));
   console.log(totalDistance);
 
   return {

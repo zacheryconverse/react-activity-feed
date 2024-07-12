@@ -287,6 +287,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         routeType: flight.routeType,
         fixes: flight.fixes,
       };
+      console.log('flightStats', flightStats);
 
       const url = await client.files.upload(file);
       setIgcs((prevState) => {

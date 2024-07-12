@@ -39,6 +39,7 @@ export type FileUploadState = {
   file: File | Blob;
   id: string;
   state: UploadState;
+  data?: FlightStatistics;
   url?: string;
 };
 
@@ -557,7 +558,12 @@ export function useStatusUpdateForm<
           name: (upload.file as File).name,
           mimeType: upload.file.type,
         })),
-        igc: uploadedIgcs.map((igc) => igc.url).filter(Boolean) as string[],
+        igc: uploadedIgcs
+          .map((igc) => ({
+            data: igc.data,
+            url: igc.url,
+          }))
+          .filter(Boolean) as { data: FlightStatistics; url: string }[],
       },
     };
 

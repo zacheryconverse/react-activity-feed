@@ -21,7 +21,7 @@
     "declaration": true,
     "declarationMap": true,
     "declarationDir": "./dist",
-    "sourceMap": true,
+    "sourceMap": false,
     "strict": false,
     "strictNullChecks": true,
     "noImplicitReturns": true,

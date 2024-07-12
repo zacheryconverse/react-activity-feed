@@ -524,7 +524,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     files,
     igcs,
     orderedImages,
-    orderedVideos = [],
+    orderedVideos,
     orderedFiles,
     orderedIgcs,
     uploadedImages,
@@ -584,7 +584,7 @@ export function useStatusUpdateForm<
     igcs,
     orderedImages,
     orderedFiles,
-    orderedVideos = [],
+    orderedVideos,
     orderedIgcs,
     uploadedImages,
     uploadedFiles,
@@ -602,6 +602,8 @@ export function useStatusUpdateForm<
     removeIgc,
   } = useUpload({ client: client as StreamClient, logErr });
 
+  const safeOrderedVideos = orderedVideos || [];
+
   const resetState = useCallback(() => {
     setText('');
     setSubmitting(false);
@@ -613,7 +615,7 @@ export function useStatusUpdateForm<
     for (const image of orderedImages) {
       if (image.url) return image.url;
     }
-    for (const video of orderedVideos) {
+    for (const video of safeOrderedVideos) {
       if (video.url) return video.url;
     }
     return text.trim();
@@ -624,7 +626,7 @@ export function useStatusUpdateForm<
     Boolean(object()) &&
     orderedImages.every((upload) => upload.state !== 'uploading') &&
     orderedFiles.every((upload) => upload.state !== 'uploading') &&
-    orderedVideos.every((upload) => upload.state !== 'uploading') &&
+    safeOrderedVideos.every((upload) => upload.state !== 'uploading') &&
     orderedIgcs.every((upload) => upload.state !== 'uploading') &&
     !isOgScraping;
 

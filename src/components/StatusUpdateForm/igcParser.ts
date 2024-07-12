@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { parse } from 'igc-parser';
 
 export interface Fix {

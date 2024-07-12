@@ -446,7 +446,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         uploadNewVideo(file);
       } else if (file.name.toLowerCase().endsWith('.igc')) {
         uploadNewIgc(file);
-        break; // Ensure only one IGC file
+        break;
       } else if (file instanceof File) {
         uploadNewFile(file);
       }
@@ -524,6 +524,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     files,
     igcs,
     orderedImages,
+    orderedVideos,
     orderedFiles,
     orderedIgcs,
     uploadedImages,

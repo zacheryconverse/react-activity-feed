@@ -14,8 +14,8 @@ import {
 import { DefaultAT, DefaultUT, useTranslationContext } from '../../context';
 import { ElementOrComponentOrLiteralType, PropsWithElementAttributes, smartRender } from '../../utils';
 import { useStatusUpdateForm } from './useStatusUpdateForm';
-import VideoPreviewer from './VideoPreviewer';
-import VideoUploadButton from './VideoUploadButton';
+// import VideoPreviewer from './VideoPreviewer';
+// import VideoUploadButton from './VideoUploadButton';
 import { Panel, PanelContent, PanelFooter, PanelHeading } from '../Panel';
 import { Textarea as DefaultTextarea, TextareaProps } from '../Textarea';
 import { Avatar } from '../Avatar';
@@ -197,7 +197,7 @@ export function StatusUpdateForm<
               />
             )}
 
-            {state.videos.order.length > 0 && (
+            {/* {state.videos.order.length > 0 && (
               <VideoPreviewer
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 videoUploads={state.videos.order.map((id) => state.videos.data[id]) as any}
@@ -205,7 +205,7 @@ export function StatusUpdateForm<
                 handleRetry={(id) => state.uploadVideo(id, state.videos.data[id])}
                 handleFiles={state.uploadNewFiles}
               />
-            )}
+            )} */}
           </PanelContent>
 
           <PanelFooter>
@@ -217,9 +217,9 @@ export function StatusUpdateForm<
                 <div style={{ marginRight: '32px', display: 'inline-block' }}>
                   <FileUploadButton handleFiles={state.uploadNewFiles} multiple />
                 </div>
-                <div style={{ marginRight: '32px', display: 'inline-block' }}>
+                {/* <div style={{ marginRight: '32px', display: 'inline-block' }}>
                   <VideoUploadButton handleFiles={state.uploadNewFiles} multiple />
-                </div>
+                </div> */}
                 <EmojiPicker onSelect={state.onSelectEmoji} emojiData={emojiData} i18n={emojiI18n} />
                 {FooterItem}
               </div>

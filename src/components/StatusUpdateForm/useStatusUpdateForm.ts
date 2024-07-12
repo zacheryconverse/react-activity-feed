@@ -267,7 +267,14 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
 
     try {
       const igcContent = await file.text();
+      console.log('IGC Content:', igcContent);
+
       const flight = solver(igcContent, scoringRules.XContest).next().value;
+      console.log('Flight:', flight);
+
+      if (!flight) {
+        throw new Error('Failed to analyze IGC file');
+      }
 
       const flightStats = {
         flightDuration: flight.flightDuration,
@@ -300,6 +307,8 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         return { ...prevState };
       });
     } catch (error) {
+      console.error('Error uploading IGC file:', error);
+
       logErr(error, 'upload-igc');
       setIgcs((prevState) => {
         prevState.data[id].state = 'failed';

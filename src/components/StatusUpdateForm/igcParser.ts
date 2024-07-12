@@ -1,5 +1,6 @@
 // @ts-nocheck
 import { parse } from 'igc-parser';
+import { solver, scoringRules } from 'igc-xc-score';
 
 export interface Fix {
   gpsAltitude: number;
@@ -13,6 +14,7 @@ export interface FlightData {
   date?: Date;
   gliderId?: string;
   pilot?: string;
+  site?: string;
   task?: string;
 }
 
@@ -26,9 +28,20 @@ export const parseIgcFile = (igcFileContent: string): FlightData | null => {
 };
 
 export interface FlightStatistics {
+  avgSpeed: number;
+  coefficient: number;
+  date: Date;
   flightDuration: string;
+  freeDistance: number;
+  gliderType: string;
   maxAltitude: number;
-  totalDistance: number;
+  maxAltitudeGain: number;
+  maxClimbRate: number;
+  maxSinkRate: number;
+  pilot: string;
+  routeType: string;
+  site: string;
+  score?: number;
 }
 
 /**
@@ -41,8 +54,8 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
     console.error('Invalid flight data:', flightData);
     return null;
   }
-
-  const { fixes } = flightData;
+  console.log('flightData', flightData);
+  const { fixes, date, gliderId, pilot, site } = flightData;
 
   // Ensure the time is in the correct format
   const parseTime = (timeStr: string): Date | null => {
@@ -75,7 +88,6 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
   };
 
   const flightDuration = formatDuration(endTime.getTime() - startTime.getTime());
-  console.log(flightDuration);
 
   // Calculate maximum altitude reached during the flight.
   const maxAltitude = fixes.reduce((max, fix) => Math.max(max, fix.gpsAltitude), fixes[0].gpsAltitude);
@@ -97,6 +109,16 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
   };
 
   let totalDistance = 0;
+  let maxAltitudeGain = 0;
+  let maxClimbRate = -Infinity;
+  let maxSinkRate = Infinity;
+  let totalDuration = 0;
+
+  const standardizedPeriod = 10; // seconds
+  let altitudeGain = 0;
+  let climbRate = 0;
+  let sinkRate = 0;
+
   for (let i = 1; i < fixes.length; i++) {
     totalDistance += haversineDistance(
       fixes[i].latitude,
@@ -104,14 +126,48 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
       fixes[i - 1].latitude,
       fixes[i - 1].longitude,
     );
+
+    const duration = (new Date(fixes[i].time).getTime() - new Date(fixes[i - 1].time).getTime()) / 1000; // in seconds
+
+    if (duration > 0) {
+      altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
+
+      if (duration <= standardizedPeriod) {
+        climbRate = altitudeGain / duration;
+        sinkRate = altitudeGain / duration;
+      }
+
+      maxClimbRate = Math.max(maxClimbRate, climbRate);
+      maxSinkRate = Math.min(maxSinkRate, sinkRate);
+    }
+
+    maxAltitudeGain = Math.max(maxAltitudeGain, altitudeGain);
+
+    totalDuration += duration;
   }
 
-  totalDistance = parseFloat(totalDistance.toFixed(2));
-  console.log(totalDistance);
+  freeDistance = parseFloat(totalDistance.toFixed(2));
+  const avgSpeed = totalDistance / (totalDuration / 3600); // km/h
+  const flight = solver(igcContent, scoringRules.XContest).next().value;
+  const score = flight?.score;
+
+  console.log(totalDistance, maxAltitudeGain, maxClimbRate, maxSinkRate, avgSpeed);
 
   return {
     flightDuration,
     maxAltitude,
     totalDistance,
+    date,
+    pilot,
+    gliderType: gliderId,
+    site,
+    maxAltitudeGain,
+    maxClimbRate,
+    maxSinkRate,
+    avgSpeed,
+    freeDistance,
+    score,
+    // coefficient: 1,
+    // routeType: "Flat Triangle",
   };
 };

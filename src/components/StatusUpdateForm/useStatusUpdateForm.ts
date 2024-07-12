@@ -18,10 +18,10 @@ import { useDebouncedCallback } from 'use-debounce';
 import { BaseEmoji, EmojiData } from 'emoji-mart';
 import { UploadState } from 'react-file-utils';
 import { NewActivity, OGAPIResponse, StreamClient, UR } from 'getstream';
-import { solver, scoringRules } from 'igc-xc-score';
 
 import { DefaultAT, DefaultUT, useStreamContext } from '../../context';
 import { StatusUpdateFormProps } from './StatusUpdateForm';
+import { parseIgcFile, extractFlightStatistics, FlightStatistics } from './igcParser';
 import {
   generateRandomId,
   dataTransferItemsToFiles,
@@ -40,7 +40,7 @@ export type FileUploadState = {
   file: File | Blob;
   id: string;
   state: UploadState;
-  data?: any;
+  data?: FlightStatistics;
   url?: string;
 };
 
@@ -267,48 +267,28 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
 
     try {
       const igcContent = await file.text();
-      console.log('IGC Content:', igcContent);
-
-      const flight = solver(igcContent, scoringRules.XContest).next().value;
-      console.log('Flight:', flight);
-
-      if (!flight) {
-        throw new Error('Failed to analyze IGC file');
+      const igcData = parseIgcFile(igcContent);
+      console.log('igcData', igcData, 'file', file);
+      if (igcData) {
+        const flightStats = extractFlightStatistics(igcData);
+        const url = await client.files.upload(file);
+        console.log('url', url, 'flightStats', flightStats);
+        setIgcs((prevState) => {
+          prevState.data[id] = {
+            ...prevState.data[id],
+            url: url.file,
+            state: 'finished',
+            data: flightStats,
+          };
+          return { ...prevState };
+        });
+      } else {
+        setIgcs((prevState) => {
+          prevState.data[id].state = 'failed';
+          return { ...prevState };
+        });
       }
-
-      const flightStats = {
-        flightDuration: flight.flightDuration,
-        maxAltitude: flight.maxAltitude,
-        totalDistance: flight.totalDistance,
-        date: flight.date,
-        pilot: flight.pilot,
-        gliderType: flight.gliderType,
-        site: flight.site,
-        score: flight.score,
-        maxAltitudeGain: flight.maxAltitudeGain,
-        maxClimbRate: flight.maxClimbRate,
-        maxSinkRate: flight.maxSinkRate,
-        avgSpeed: flight.avgSpeed,
-        freeDistance: flight.freeDistance,
-        coefficient: flight.coefficient,
-        routeType: flight.routeType,
-        fixes: flight.fixes,
-      };
-      console.log('flightStats', flightStats);
-
-      const url = await client.files.upload(file);
-      setIgcs((prevState) => {
-        prevState.data[id] = {
-          ...prevState.data[id],
-          url: url.file,
-          state: 'finished',
-          data: flightStats,
-        };
-        return { ...prevState };
-      });
     } catch (error) {
-      console.error('Error uploading IGC file:', error);
-
       logErr(error, 'upload-igc');
       setIgcs((prevState) => {
         prevState.data[id].state = 'failed';
@@ -584,7 +564,7 @@ export function useStatusUpdateForm<
             data: igc.data,
             url: igc.url,
           }))
-          .filter(Boolean) as { data: any; url: string }[],
+          .filter(Boolean) as { data: FlightStatistics; url: string }[],
       },
     };
 

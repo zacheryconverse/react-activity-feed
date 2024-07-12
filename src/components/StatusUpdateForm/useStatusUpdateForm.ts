@@ -290,7 +290,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     });
   }, []);
 
-  const uploadNewIgc = useCallback((file: File) => {
+  const uploadNewIgc = useCallback(async (file: File) => {
     const id = generateRandomId();
     setIgcs(({ data }) => {
       data[id] = { id, file, state: 'uploading' };

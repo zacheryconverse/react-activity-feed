@@ -268,7 +268,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     try {
       const igcContent = await file.text();
       const igcData = parseIgcFile(igcContent);
-      console.log('igcData', igcData, 'file', file);
+      console.log('igcContent:', igcContent, 'igcData', igcData, 'file', file);
       if (igcData) {
         const flightStats = extractFlightStatistics(igcData, igcContent);
         const url = await client.files.upload(file);

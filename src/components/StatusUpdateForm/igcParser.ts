@@ -29,7 +29,7 @@ export const parseIgcFile = (igcFileContent: string): FlightData | null => {
 
 export interface FlightStatistics {
   avgSpeed: number;
-  coefficient: number;
+  // coefficient: number;
   date: Date;
   flightDuration: string;
   freeDistance: number;
@@ -39,9 +39,9 @@ export interface FlightStatistics {
   maxClimbRate: number;
   maxSinkRate: number;
   pilot: string;
-  routeType: string;
-  site: string;
+  // routeType: string;
   score?: number;
+  site?: string;
 }
 
 /**
@@ -54,7 +54,7 @@ export const extractFlightStatistics = (flightData: FlightData, igcContent: stri
     console.error('Invalid flight data:', flightData);
     return null;
   }
-  console.log('flightData', flightData);
+  console.log('flightData', flightData, 'igcContent', igcContent);
   const { fixes, date, gliderId, pilot, site } = flightData;
 
   // Ensure the time is in the correct format

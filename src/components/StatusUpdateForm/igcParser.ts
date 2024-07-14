@@ -148,7 +148,7 @@ export const extractFlightStatistics = (flightData: FlightData, igcContent: stri
 
   freeDistance = parseFloat(totalDistance.toFixed(2));
   const avgSpeed = totalDistance / (freeDistance / 3600); // km/h
-  const flight = solver(igcContent, scoringRules.XContest).next().value;
+  const flight = solver(flightData, scoringRules.XContest).next().value;
   const score = flight?.score;
 
   console.log(totalDistance, maxAltitudeGain, maxClimbRate, maxSinkRate, avgSpeed);

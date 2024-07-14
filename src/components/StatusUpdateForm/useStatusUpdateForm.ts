@@ -270,7 +270,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       const igcData = parseIgcFile(igcContent);
       console.log('igcContent:', igcContent, 'igcData', igcData, 'file', file);
       if (igcData) {
-        const flightStats = extractFlightStatistics(igcData, igcContent);
+        const flightStats = extractFlightStatistics(igcData);
         const url = await client.files.upload(file);
         console.log('url', url, 'flightStats', flightStats);
         setIgcs((prevState) => {

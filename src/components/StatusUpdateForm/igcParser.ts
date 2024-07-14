@@ -12,7 +12,7 @@ export interface Fix {
 export interface FlightData {
   fixes: Fix[];
   date?: Date;
-  gliderId?: string;
+  gliderType?: string;
   pilot?: string;
   site?: string;
   task?: string;
@@ -29,7 +29,6 @@ export const parseIgcFile = (igcFileContent: string): FlightData | null => {
 
 export interface FlightStatistics {
   avgSpeed: number;
-  // coefficient: number;
   date: Date;
   flightDuration: string;
   freeDistance: number;
@@ -39,25 +38,18 @@ export interface FlightStatistics {
   maxClimbRate: number;
   maxSinkRate: number;
   pilot: string;
-  // routeType: string;
   score?: number;
   site?: string;
 }
 
-/**
- * Extracts flight statistics from the given flight data.
- * @param {FlightData} flightData - The flight data obtained from parsing an IGC file.
- * @returns {FlightStatistics | null} An object containing various flight statistics or null if data is invalid.
- */
-export const extractFlightStatistics = (flightData: FlightData, igcContent: string): FlightStatistics | null => {
+export const extractFlightStatistics = (flightData: FlightData): FlightStatistics | null => {
   if (!flightData || !flightData.fixes || flightData.fixes.length === 0) {
     console.error('Invalid flight data:', flightData);
     return null;
   }
-  console.log('flightData', flightData, 'igcContent', igcContent);
-  const { fixes, date, gliderId, pilot, site } = flightData;
+  console.log('parser file flightData', flightData);
+  const { fixes, date, gliderType, pilot, site } = flightData;
 
-  // Ensure the time is in the correct format
   const parseTime = (timeStr: string): Date | null => {
     const regex = /(\d{2}):(\d{2}):(\d{2})/;
     const match = timeStr.match(regex);
@@ -89,10 +81,8 @@ export const extractFlightStatistics = (flightData: FlightData, igcContent: stri
 
   const flightDuration = formatDuration(endTime.getTime() - startTime.getTime());
 
-  // Calculate maximum altitude reached during the flight.
   const maxAltitude = fixes.reduce((max, fix) => Math.max(max, fix.gpsAltitude), fixes[0].gpsAltitude);
 
-  // Calculate total distance flown using the Haversine formula.
   const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
     const toRadians = (deg: number): number => deg * (Math.PI / 180);
     const R = 6371; // Earth's radius in kilometers
@@ -112,12 +102,6 @@ export const extractFlightStatistics = (flightData: FlightData, igcContent: stri
   let maxAltitudeGain = 0;
   let maxClimbRate = -Infinity;
   let maxSinkRate = Infinity;
-  let freeDistance = 0;
-
-  const standardizedPeriod = 10; // seconds
-  let altitudeGain = 0;
-  let climbRate = 0;
-  let sinkRate = 0;
 
   for (let i = 1; i < fixes.length; i++) {
     totalDistance += haversineDistance(
@@ -127,27 +111,24 @@ export const extractFlightStatistics = (flightData: FlightData, igcContent: stri
       fixes[i - 1].longitude,
     );
 
-    const duration = (new Date(fixes[i].time).getTime() - new Date(fixes[i - 1].time).getTime()) / 1000; // in seconds
+    const duration = (parseTime(fixes[i].time).getTime() - parseTime(fixes[i - 1].time).getTime()) / 1000; // in seconds
 
     if (duration > 0) {
-      altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
-
-      if (duration <= standardizedPeriod) {
-        climbRate = altitudeGain / duration;
-        sinkRate = altitudeGain / duration;
-      }
+      const altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
+      const climbRate = altitudeGain / duration;
+      const sinkRate = -altitudeGain / duration;
 
       maxClimbRate = Math.max(maxClimbRate, climbRate);
-      maxSinkRate = Math.min(maxSinkRate, sinkRate);
+      maxSinkRate = Math.max(maxSinkRate, sinkRate);
+
+      if (altitudeGain > 0) {
+        maxAltitudeGain = Math.max(maxAltitudeGain, altitudeGain);
+      }
     }
-
-    maxAltitudeGain = Math.max(maxAltitudeGain, altitudeGain);
-
-    freeDistance += duration;
   }
 
-  freeDistance = parseFloat(totalDistance.toFixed(2));
-  const avgSpeed = totalDistance / (freeDistance / 3600); // km/h
+  const flightDurationInSeconds = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
+const avgSpeed = ((totalDistance / flightDurationInSeconds) * 3600).toFixed(2); // km/h
   const flight = solver(flightData, scoringRules.XContest).next().value;
   const score = flight?.score;
 
@@ -156,18 +137,15 @@ export const extractFlightStatistics = (flightData: FlightData, igcContent: stri
   return {
     flightDuration,
     maxAltitude,
-    totalDistance,
+    freeDistance: totalDistance,
     date,
     pilot,
-    gliderType: gliderId,
+    gliderType,
     site,
     maxAltitudeGain,
     maxClimbRate,
     maxSinkRate,
     avgSpeed,
-    freeDistance,
     score,
-    // coefficient: 1,
-    // routeType: "Flat Triangle",
   };
 };

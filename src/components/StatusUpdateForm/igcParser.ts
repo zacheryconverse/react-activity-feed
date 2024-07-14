@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { parse, isValid } from 'igc-parser';
+import { parse } from 'igc-parser';
 import { solver, scoringRules } from 'igc-xc-score';
 
 export interface Fix {
@@ -19,15 +19,10 @@ export interface FlightData {
 }
 
 export const parseIgcFile = (igcFileContent: string): FlightData | null => {
-  if (!isValid(igcFileContent)) {
-    console.error('Invalid IGC file content');
-    return null;
-  }
-
   try {
     return parse(igcFileContent) as unknown as FlightData;
   } catch (error) {
-    console.error('Error parsing IGC file:', error);
+    console.error('Invalid IGC file content:', error);
     return null;
   }
 };

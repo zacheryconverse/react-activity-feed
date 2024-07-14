@@ -100,8 +100,27 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
 
   let totalDistance = 0;
   let maxAltitudeGain = 0;
-  let maxClimbRate = -Infinity;
-  let maxSinkRate = Infinity;
+
+  const calculateMaxRates = (fixes, windowSize) => {
+    let maxClimb = -Infinity;
+    let maxSink = Infinity;
+
+    for (let i = 0; i < fixes.length - windowSize; i++) {
+      const startFix = fixes[i];
+      const endFix = fixes[i + windowSize];
+      const duration = (parseTime(endFix.time).getTime() - parseTime(startFix.time).getTime()) / 1000; // in seconds
+
+      if (duration > 0) {
+        const altitudeGain = endFix.gpsAltitude - startFix.gpsAltitude;
+        const climbRate = altitudeGain / duration;
+        const sinkRate = -altitudeGain / duration;
+
+        maxClimb = Math.max(maxClimb, climbRate);
+        maxSink = Math.min(maxSink, sinkRate);
+      }
+    }
+    return { maxClimb, maxSink };
+  };
 
   for (let i = 1; i < fixes.length; i++) {
     totalDistance += haversineDistance(
@@ -115,11 +134,6 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
 
     if (duration > 0) {
       const altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
-      const climbRate = altitudeGain / duration;
-      const sinkRate = -altitudeGain / duration;
-
-      maxClimbRate = Math.max(maxClimbRate, climbRate);
-      maxSinkRate = Math.max(maxSinkRate, sinkRate);
 
       if (altitudeGain > 0) {
         maxAltitudeGain = Math.max(maxAltitudeGain, altitudeGain);
@@ -128,11 +142,12 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
   }
 
   const flightDurationInSeconds = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
-const avgSpeed = ((totalDistance / flightDurationInSeconds) * 3600).toFixed(2); // km/h
+  const avgSpeed = ((totalDistance / flightDurationInSeconds) * 3600).toFixed(2); // km/h
+
+  const { maxClimb, maxSink } = calculateMaxRates(fixes, 10);
+
   const flight = solver(flightData, scoringRules.XContest).next().value;
   const score = flight?.score;
-
-  console.log(totalDistance, maxAltitudeGain, maxClimbRate, maxSinkRate, avgSpeed);
 
   return {
     flightDuration,
@@ -143,8 +158,8 @@ const avgSpeed = ((totalDistance / flightDurationInSeconds) * 3600).toFixed(2); 
     gliderType,
     site,
     maxAltitudeGain,
-    maxClimbRate,
-    maxSinkRate,
+    maxClimb,
+    maxSink,
     avgSpeed,
     score,
   };

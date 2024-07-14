@@ -100,6 +100,25 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
 
   let totalDistance = 0;
   let maxAltitudeGain = 0;
+  let minAltitude = fixes[0].gpsAltitude;
+
+  for (let i = 1; i < fixes.length; i++) {
+    totalDistance += haversineDistance(
+      fixes[i].latitude,
+      fixes[i].longitude,
+      fixes[i - 1].latitude,
+      fixes[i - 1].longitude,
+    );
+
+    const altitudeGain = fixes[i].gpsAltitude - minAltitude;
+    if (altitudeGain > 0) {
+      maxAltitudeGain = Math.max(maxAltitudeGain, altitudeGain);
+    }
+    minAltitude = Math.min(minAltitude, fixes[i].gpsAltitude);
+  }
+
+  const flightDurationInSeconds = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
+  const avgSpeed = (totalDistance / (flightDurationInSeconds / 3600)).toFixed(2); // km/h
 
   const calculateMaxRates = (fixes, windowSize) => {
     let maxClimb = -Infinity;
@@ -111,38 +130,18 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
       const duration = (parseTime(endFix.time).getTime() - parseTime(startFix.time).getTime()) / 1000; // in seconds
 
       if (duration > 0) {
-        const altitudeGain = endFix.gpsAltitude - startFix.gpsAltitude;
-        const climbRate = altitudeGain / duration;
-        const sinkRate = -altitudeGain / duration;
+        const altitudeChange = endFix.gpsAltitude - startFix.gpsAltitude;
+        const rate = altitudeChange / duration;
 
-        maxClimb = Math.max(maxClimb, climbRate);
-        maxSink = Math.min(maxSink, sinkRate);
+        if (rate > 0) {
+          maxClimb = Math.max(maxClimb, rate);
+        } else {
+          maxSink = Math.min(maxSink, rate);
+        }
       }
     }
     return { maxClimb, maxSink };
   };
-
-  for (let i = 1; i < fixes.length; i++) {
-    totalDistance += haversineDistance(
-      fixes[i].latitude,
-      fixes[i].longitude,
-      fixes[i - 1].latitude,
-      fixes[i - 1].longitude,
-    );
-
-    const duration = (parseTime(fixes[i].time).getTime() - parseTime(fixes[i - 1].time).getTime()) / 1000; // in seconds
-
-    if (duration > 0) {
-      const altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
-
-      if (altitudeGain > 0) {
-        maxAltitudeGain = Math.max(maxAltitudeGain, altitudeGain);
-      }
-    }
-  }
-
-  const flightDurationInSeconds = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
-  const avgSpeed = ((totalDistance / flightDurationInSeconds) * 3600).toFixed(2); // km/h
 
   const { maxClimb, maxSink } = calculateMaxRates(fixes, 10);
 
@@ -152,15 +151,16 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
   return {
     flightDuration,
     maxAltitude,
-    freeDistance: totalDistance,
+    freeDistance: parseFloat(totalDistance.toFixed(2)),
     date,
     pilot,
     gliderType,
     site,
     maxAltitudeGain,
-    maxClimb,
-    maxSink,
-    avgSpeed,
+    maxClimb: parseFloat(maxClimb.toFixed(1)),
+    maxSink: parseFloat((-maxSink).toFixed(1)),
+    avgSpeed: parseFloat(avgSpeed),
     score,
+    fixes,
   };
 };

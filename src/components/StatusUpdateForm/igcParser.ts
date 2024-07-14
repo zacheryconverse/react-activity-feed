@@ -1,5 +1,5 @@
 // @ts-nocheck
-import { parse } from 'igc-parser';
+import { parse, isValid } from 'igc-parser';
 import { solver, scoringRules } from 'igc-xc-score';
 
 export interface Fix {
@@ -19,6 +19,11 @@ export interface FlightData {
 }
 
 export const parseIgcFile = (igcFileContent: string): FlightData | null => {
+  if (!isValid(igcFileContent)) {
+    console.error('Invalid IGC file content');
+    return null;
+  }
+
   try {
     return parse(igcFileContent) as unknown as FlightData;
   } catch (error) {
@@ -100,7 +105,6 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
 
   let totalDistance = 0;
   let maxAltitudeGain = 0;
-  let minAltitude = fixes[0].gpsAltitude;
 
   for (let i = 1; i < fixes.length; i++) {
     totalDistance += haversineDistance(
@@ -110,11 +114,10 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
       fixes[i - 1].longitude,
     );
 
-    const altitudeGain = fixes[i].gpsAltitude - minAltitude;
+    const altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
     if (altitudeGain > 0) {
-      maxAltitudeGain = Math.max(maxAltitudeGain, altitudeGain);
+      maxAltitudeGain += altitudeGain;
     }
-    minAltitude = Math.min(minAltitude, fixes[i].gpsAltitude);
   }
 
   const flightDurationInSeconds = (endTime.getTime() - startTime.getTime()) / 1000; // in seconds
@@ -143,7 +146,7 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
     return { maxClimb, maxSink };
   };
 
-  const { maxClimb, maxSink } = calculateMaxRates(fixes, 10);
+  const { maxClimb, maxSink } = calculateMaxRates(fixes, 15);
 
   const flight = solver(flightData, scoringRules.XContest).next().value;
   const score = flight?.score;
@@ -161,6 +164,5 @@ export const extractFlightStatistics = (flightData: FlightData): FlightStatistic
     maxSink: parseFloat((-maxSink).toFixed(1)),
     avgSpeed: parseFloat(avgSpeed),
     score,
-    fixes,
   };
 };

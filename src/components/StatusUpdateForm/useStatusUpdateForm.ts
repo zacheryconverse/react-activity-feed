@@ -529,6 +529,10 @@ export function useStatusUpdateForm<
   }, []);
 
   const object = () => {
+    for (const igc of orderedIgcs) {
+      if (igc.url) return igc.url;
+    }
+
     for (const image of orderedImages) {
       if (image.url) return image.url;
     }

@@ -94,11 +94,16 @@ const FlatFeedInner = <
   const feed = useFeedContext<UT, AT, CT, RT, CRT, PT>();
   const { t } = useTranslationContext();
 
-  const refreshFeed = () => feed.refresh(options);
+  const refreshFeed = () => {
+    console.log('Refresh feed called');
+    feed.refresh(options);
+  };
 
   if (feed.refreshing && !feed.hasDoneRequest) {
     return <div className="raf-loading-indicator">{smartRender<LoadingIndicatorProps>(LoadingIndicator)}</div>;
   }
+
+  console.log('FlatFeedInner activities:', feed.activities);
 
   return (
     <>

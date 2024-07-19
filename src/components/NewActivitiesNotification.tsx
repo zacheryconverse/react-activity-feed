@@ -66,8 +66,6 @@ export const NewActivitiesNotification = ({
 
   const label = defaultLabelFunction(attributes);
 
-  console.log('NewActivitiesNotification props:', { adds, deletes, label, onClick });
-
   if (!label) return null;
 
   return (
@@ -75,7 +73,6 @@ export const NewActivitiesNotification = ({
       className={classNames('raf-new-activities-notification', className)}
       type="button"
       onClick={(event) => {
-        console.log('New activities notification clicked');
         if (onClick) onClick(event);
       }}
       style={style}

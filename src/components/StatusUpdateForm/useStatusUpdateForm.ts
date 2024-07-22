@@ -268,11 +268,11 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     try {
       const igcContent = await file.text();
       const igcData = parseIgcFile(igcContent);
-      console.log('igcContent:', igcContent, 'igcData', igcData, 'file', file);
+      // console.log('igcContent:', igcContent, 'igcData', igcData, 'file', file);
       if (igcData) {
         const flightStats = extractFlightStatistics(igcData);
         const url = await client.files.upload(file);
-        console.log('url', url, 'flightStats', flightStats);
+        // console.log('url', url, 'flightStats', flightStats);
         setIgcs((prevState) => {
           prevState.data[id] = {
             ...prevState.data[id],

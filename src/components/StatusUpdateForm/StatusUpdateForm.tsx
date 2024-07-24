@@ -215,7 +215,11 @@ export function StatusUpdateForm<
                   <ImageUploadButton resetOnChange handleFiles={state.uploadNewFiles} multiple />
                 </div>
                 <div style={{ marginRight: '32px', display: 'inline-block' }}>
-                  <FileUploadButton handleFiles={state.uploadNewFiles} multiple />
+                  <FileUploadButton handleFiles={state.uploadNewFiles} multiple>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
+                      <path d="M10 2H4c-1.1 0-1.99.9-1.99 2L2 22c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8l-6-6zm3 13h-2v-2h2v2zm0-4h-2V7h2v2zm3 4h-2v-2h2v2zm0-4h-2V7h2v2z" />
+                    </svg>
+                  </FileUploadButton>
                 </div>
                 {/* <div style={{ marginRight: '32px', display: 'inline-block' }}>
                   <VideoUploadButton handleFiles={state.uploadNewFiles} multiple />

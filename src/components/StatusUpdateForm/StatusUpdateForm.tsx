@@ -212,14 +212,14 @@ export function StatusUpdateForm<
             <div style={{ display: 'flex', alignItems: 'center' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ marginRight: '32px', display: 'inline-block' }}>
-                  <ImageUploadButton resetOnChange handleFiles={state.uploadNewFiles} multiple />
-                </div>
-                <div style={{ marginRight: '32px', display: 'inline-block' }}>
                   <FileUploadButton handleFiles={state.uploadNewFiles} multiple>
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" height="40px">
                       <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"></path>
                     </svg>
                   </FileUploadButton>
+                </div>
+                <div style={{ marginRight: '32px', display: 'inline-block' }}>
+                  <ImageUploadButton resetOnChange handleFiles={state.uploadNewFiles} multiple />
                 </div>
                 {/* <div style={{ marginRight: '32px', display: 'inline-block' }}>
                   <VideoUploadButton handleFiles={state.uploadNewFiles} multiple />

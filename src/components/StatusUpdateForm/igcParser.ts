@@ -202,7 +202,8 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   const { distance, score, tp, legs, cp } = scoreInfo;
   const { flight } = opt;
   const { pilot, gliderType, site, date, fixes } = flight;
-
+  console.log('flight', flight);
+  console.log('scoreInfo', scoreInfo);
   const launchTime = fixes[0].timestamp;
   const landingTime = fixes[fixes.length - 1].timestamp;
   const flightDurationSeconds = (landingTime - launchTime) / 1000; // Convert milliseconds to seconds

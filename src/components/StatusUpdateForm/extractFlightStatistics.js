@@ -1,100 +1,6 @@
-// @ts-nocheck
-import { parse } from 'igc-parser';
+const { haversineDistance } = require('./classifyTrack');
 
-export interface Fix {
-  gpsAltitude: number;
-  latitude: number;
-  longitude: number;
-  time: string;
-  timestamp: number;
-}
-
-export interface FlightData {
-  fixes: Fix[];
-  date?: Date;
-  gliderType?: string;
-  pilot?: string;
-  site?: string;
-  task?: string;
-}
-
-export const parseIgcFile = (igcFileContent: string): FlightData | null => {
-  try {
-    return parse(igcFileContent) as unknown as FlightData;
-  } catch (error) {
-    console.error('Invalid IGC file content:', error);
-    return null;
-  }
-};
-
-export interface FlightStatistics {
-  avgSpeed: number;
-  classification: string;
-  date: Date;
-  flightDuration: string;
-  freeDistance: number;
-  freeDistanceAvgSpeed: number;
-  freeLegDetails: LegDetail[];
-  gliderType: string;
-  maxAltitude: number;
-  maxAltitudeGain: number;
-  maxClimb: number;
-  maxSink: number;
-  maxSpeed: number;
-  pilot: string;
-  points: Point[];
-  routeDistance: number;
-  routeDuration: string;
-  routeLegDetails: LegDetail[];
-  score: number;
-  site: string;
-  totalDistance: number;
-}
-
-interface Point {
-  altitude: number;
-  formattedLat: string;
-  formattedLon: string;
-  label: string;
-  time: string;
-}
-
-interface LegDetail {
-  length: string;
-  percentOfRoute: string;
-}
-
-interface ScoreInfo {
-  cp: {
-    in: { r: number };
-    out: { r: number };
-  };
-  distance: number;
-  legs: Leg[];
-  score: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tp: any[];
-}
-
-interface Result {
-  opt: {
-    flight: FlightData;
-    scoring: {
-      name: string;
-    };
-  };
-  scoreInfo: ScoreInfo;
-}
-
-interface Leg {
-  d: number;
-  finish: {
-    latitude: number;
-    longitude: number;
-  };
-}
-
-const formatCoordinates = (lat: number, lon: number) => {
+const formatCoordinates = (lat, lon) => {
   const latDirection = lat >= 0 ? 'N' : 'S';
   const lonDirection = lon >= 0 ? 'E' : 'W';
   const formattedLat = `${Math.abs(lat).toFixed(4)}° ${latDirection}`;
@@ -102,39 +8,29 @@ const formatCoordinates = (lat: number, lon: number) => {
   return { formattedLat, formattedLon };
 };
 
-const formatTime = (timestamp: number) => {
+const formatTime = (timestamp) => {
   const date = new Date(timestamp);
   return date.toISOString().substring(11, 19);
 };
 
-const formatDuration = (seconds: number) => {
+const formatDuration = (seconds) => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
   return `${hours}h ${minutes}m`;
 };
 
-const calculateMaxAltitudeGainAndDistance = (fixes: Fix[]) => {
+const calculateMaxAltitudeGain = (fixes) => {
   let maxAltitudeGain = 0;
-  let totalDistance = 0;
-
   for (let i = 1; i < fixes.length; i++) {
     const altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
     if (altitudeGain > 5) {
       maxAltitudeGain += altitudeGain;
     }
-
-    totalDistance += haversineDistance(
-      fixes[i].latitude,
-      fixes[i].longitude,
-      fixes[i - 1].latitude,
-      fixes[i - 1].longitude,
-    );
   }
-
-  return { maxAltitudeGain, totalDistance };
+  return maxAltitudeGain;
 };
 
-const calculateMaxRates = (elev: number[], time: number[], windowSizeSeconds = 30) => {
+const calculateMaxRates = (elev, time, windowSizeSeconds = 30) => {
   let maxClimb = -Infinity;
   let maxSink = Infinity;
 
@@ -160,7 +56,7 @@ const calculateMaxRates = (elev: number[], time: number[], windowSizeSeconds = 3
   return { maxClimb, maxSink };
 };
 
-const calculateTotalLegDistance = (startPoint: Fix, endPoint: Fix, tp: { x: number; y: number }[], legs: Leg[]) => {
+const calculateTotalLegDistance = (startPoint, endPoint, tp, legs) => {
   let totalLegDistance = 0;
   let previousPoint = startPoint;
 
@@ -172,32 +68,12 @@ const calculateTotalLegDistance = (startPoint: Fix, endPoint: Fix, tp: { x: numb
     previousPoint = leg.finish;
   });
 
-  totalLegDistance += haversineDistance(
-    previousPoint.latitude,
-    previousPoint.longitude,
-    endPoint.latitude,
-    endPoint.longitude,
-  );
+  totalLegDistance += haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
 
   return totalLegDistance;
 };
 
-const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: number): number => {
-  const toRadians = (deg: number): number => deg * (Math.PI / 180);
-  const R = 6371; // Earth's radius in kilometers
-
-  const dLat = toRadians(lat2 - lat1);
-  const dLon = toRadians(lon2 - lon1);
-
-  const a =
-    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-    Math.cos(toRadians(lat1)) * Math.cos(toRadians(lat2)) * Math.sin(dLon / 2) * Math.sin(dLon / 2);
-
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  return R * c;
-};
-
-export const extractFlightStatistics = (result: Result): FlightStatistics | null => {
+const extractFlightStatisticsTest = (result) => {
   const { scoreInfo, opt } = result;
   const { distance, score, tp, legs, cp } = scoreInfo;
   const { flight } = opt;
@@ -209,7 +85,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   const flightDuration = formatDuration(flightDurationSeconds);
 
   const maxAltitude = Math.max(...fixes.map((fix) => fix.gpsAltitude));
-  const { maxAltitudeGain, totalDistance } = calculateMaxAltitudeGainAndDistance(fixes);
+  const maxAltitudeGain = calculateMaxAltitudeGain(fixes);
 
   const cpInFix = fixes[cp.in.r];
   const cpOutFix = fixes[cp.out.r];
@@ -222,7 +98,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     fixes.map((fix) => fix.timestamp),
   );
 
-  const points: Point[] = [
+  const points = [
     {
       label: 'Start',
       time: formatTime(fixes[0].timestamp),
@@ -235,7 +111,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
       altitude: cpInFix.gpsAltitude,
       ...formatCoordinates(cpInFix.latitude, cpInFix.longitude),
     },
-    ...(tp
+    ...tp
       .map((turnpoint, index) => {
         const fix = fixes.find((f) => f.timestamp >= turnpoint.r);
         return fix
@@ -247,7 +123,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
             }
           : null;
       })
-      .filter(Boolean) as Point[]),
+      .filter(Boolean),
     {
       label: 'CP Out',
       time: formatTime(cpOutFix.timestamp),
@@ -266,11 +142,11 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   const endPoint = fixes[fixes.length - 1];
   const totalLegDistance = calculateTotalLegDistance(startPoint, endPoint, tp, legs);
 
-  const routeLegDetails: LegDetail[] = [];
-  const freeLegDetails: LegDetail[] = [];
+  const routeLegDetails = [];
+  const freeLegDetails = [];
   let previousPoint = { ...startPoint, r: startPoint.timestamp };
 
-  const addLegDetails = (length: number, array: LegDetail[], totalDistance: number) => {
+  const addLegDetails = (length, array, totalDistance) => {
     const legPercentOfRoute = (length / totalDistance) * 100;
     array.push({
       length: length.toFixed(2),
@@ -289,12 +165,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     previousPoint = leg.finish;
   });
 
-  legDistance = haversineDistance(
-    previousPoint.latitude,
-    previousPoint.longitude,
-    endPoint.latitude,
-    endPoint.longitude,
-  );
+  legDistance = haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
   addLegDetails(legDistance, freeLegDetails, totalLegDistance);
 
   let maxSpeed = -Infinity;
@@ -349,6 +220,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     maxAltitude,
     maxAltitudeGain,
     gliderType,
-    totalDistance: parseFloat(totalDistance.toFixed(2)),
   };
 };
+
+module.exports = { extractFlightStatisticsTest };

@@ -66,14 +66,18 @@ interface LegDetail {
 
 interface ScoreInfo {
   distance: number;
-  ep: {
-    in: { r: number };
-    out: { r: number };
-  };
   legs: Leg[];
   score: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   tp: any[];
+  cp?: {
+    in: { r: number };
+    out: { r: number };
+  };
+  ep?: {
+    finish: { r: number };
+    start: { r: number };
+  };
 }
 
 interface Result {
@@ -199,7 +203,7 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 export const extractFlightStatistics = (result: Result): FlightStatistics | null => {
   const { scoreInfo, opt } = result;
-  const { distance, score, tp, legs, ep } = scoreInfo;
+  const { distance, score, tp, legs, ep, cp } = scoreInfo;
   const { flight } = opt;
   const { pilot, gliderType, site, date, fixes } = flight;
   console.log('flight', flight);
@@ -212,9 +216,9 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   const maxAltitude = Math.max(...fixes.map((fix) => fix.gpsAltitude));
   const { maxAltitudeGain, totalDistance } = calculateMaxAltitudeGainAndDistance(fixes);
 
-  const epInFix = fixes[ep.start.r];
-  const epOutFix = fixes[ep.finish.r];
-  const turnpointsDuration = epOutFix.timestamp - epInFix.timestamp;
+  const turnpointsDuration =
+    (ep ? fixes[ep.finish.r].timestamp - fixes[ep.start.r].timestamp : 0) ||
+    (cp ? fixes[cp.out.r].timestamp - fixes[cp.in.r].timestamp : 0);
   const turnpointsDurationInHours = turnpointsDuration / 3600000;
   const avgSpeed = (distance / turnpointsDurationInHours).toFixed(2); // km/h
 
@@ -230,12 +234,6 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
       altitude: fixes[0].gpsAltitude,
       ...formatCoordinates(fixes[0].latitude, fixes[0].longitude),
     },
-    {
-      label: 'EP Start',
-      time: formatTime(epInFix.timestamp),
-      altitude: epInFix.gpsAltitude,
-      ...formatCoordinates(epInFix.latitude, epInFix.longitude),
-    },
     ...(tp
       .map((turnpoint, index) => {
         const fix = fixes.find((f) => f.timestamp >= turnpoint.r);
@@ -249,12 +247,38 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
           : null;
       })
       .filter(Boolean) as Point[]),
-    {
-      label: 'EP Finish',
-      time: formatTime(epOutFix.timestamp),
-      altitude: epOutFix.gpsAltitude,
-      ...formatCoordinates(epOutFix.latitude, epOutFix.longitude),
-    },
+    ...(ep
+      ? [
+          {
+            label: 'EP Start',
+            time: formatTime(fixes[ep.start.r].timestamp),
+            altitude: fixes[ep.start.r].gpsAltitude,
+            ...formatCoordinates(fixes[ep.start.r].latitude, fixes[ep.start.r].longitude),
+          },
+          {
+            label: 'EP Finish',
+            time: formatTime(fixes[ep.finish.r].timestamp),
+            altitude: fixes[ep.finish.r].gpsAltitude,
+            ...formatCoordinates(fixes[ep.finish.r].latitude, fixes[ep.finish.r].longitude),
+          },
+        ]
+      : []),
+    ...(cp
+      ? [
+          {
+            label: 'CP In',
+            time: formatTime(fixes[cp.in.r].timestamp),
+            altitude: fixes[cp.in.r].gpsAltitude,
+            ...formatCoordinates(fixes[cp.in.r].latitude, fixes[cp.in.r].longitude),
+          },
+          {
+            label: 'CP Out',
+            time: formatTime(fixes[cp.out.r].timestamp),
+            altitude: fixes[cp.out.r].gpsAltitude,
+            ...formatCoordinates(fixes[cp.out.r].latitude, fixes[cp.out.r].longitude),
+          },
+        ]
+      : []),
     {
       label: 'End',
       time: formatTime(fixes[fixes.length - 1].timestamp),

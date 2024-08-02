@@ -65,11 +65,11 @@ interface LegDetail {
 }
 
 interface ScoreInfo {
-  cp: {
+  distance: number;
+  ep: {
     in: { r: number };
     out: { r: number };
   };
-  distance: number;
   legs: Leg[];
   score: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -199,7 +199,7 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 export const extractFlightStatistics = (result: Result): FlightStatistics | null => {
   const { scoreInfo, opt } = result;
-  const { distance, score, tp, legs, cp } = scoreInfo;
+  const { distance, score, tp, legs, ep } = scoreInfo;
   const { flight } = opt;
   const { pilot, gliderType, site, date, fixes } = flight;
   console.log('flight', flight);
@@ -212,9 +212,9 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   const maxAltitude = Math.max(...fixes.map((fix) => fix.gpsAltitude));
   const { maxAltitudeGain, totalDistance } = calculateMaxAltitudeGainAndDistance(fixes);
 
-  const cpInFix = fixes[cp.in.r];
-  const cpOutFix = fixes[cp.out.r];
-  const turnpointsDuration = cpOutFix.timestamp - cpInFix.timestamp;
+  const epInFix = fixes[ep.start.r];
+  const epOutFix = fixes[ep.finish.r];
+  const turnpointsDuration = epOutFix.timestamp - epInFix.timestamp;
   const turnpointsDurationInHours = turnpointsDuration / 3600000;
   const avgSpeed = (distance / turnpointsDurationInHours).toFixed(2); // km/h
 
@@ -231,10 +231,10 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
       ...formatCoordinates(fixes[0].latitude, fixes[0].longitude),
     },
     {
-      label: 'CP In',
-      time: formatTime(cpInFix.timestamp),
-      altitude: cpInFix.gpsAltitude,
-      ...formatCoordinates(cpInFix.latitude, cpInFix.longitude),
+      label: 'EP Start',
+      time: formatTime(epInFix.timestamp),
+      altitude: epInFix.gpsAltitude,
+      ...formatCoordinates(epInFix.latitude, epInFix.longitude),
     },
     ...(tp
       .map((turnpoint, index) => {
@@ -250,10 +250,10 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
       })
       .filter(Boolean) as Point[]),
     {
-      label: 'CP Out',
-      time: formatTime(cpOutFix.timestamp),
-      altitude: cpOutFix.gpsAltitude,
-      ...formatCoordinates(cpOutFix.latitude, cpOutFix.longitude),
+      label: 'EP Finish',
+      time: formatTime(epOutFix.timestamp),
+      altitude: epOutFix.gpsAltitude,
+      ...formatCoordinates(epOutFix.latitude, epOutFix.longitude),
     },
     {
       label: 'End',

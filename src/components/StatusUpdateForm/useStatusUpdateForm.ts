@@ -18,6 +18,7 @@ import { useDebouncedCallback } from 'use-debounce';
 import { BaseEmoji, EmojiData } from 'emoji-mart';
 import { UploadState } from 'react-file-utils';
 import { NewActivity, OGAPIResponse, StreamClient, UR } from 'getstream';
+import { solver, scoringRules } from 'igc-xc-score';
 
 import { DefaultAT, DefaultUT, useStreamContext } from '../../context';
 import { StatusUpdateFormProps } from './StatusUpdateForm';

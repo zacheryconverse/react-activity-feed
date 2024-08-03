@@ -42,15 +42,25 @@ const formatDuration = (seconds) => {
   return `${hours}h ${minutes}m`;
 };
 
-const calculateMaxAltitudeGain = (fixes) => {
+const calculateMaxAltitudeGainAndDistance = (fixes) => {
   let maxAltitudeGain = 0;
+  let totalDistance = 0;
+
   for (let i = 1; i < fixes.length; i++) {
     const altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
     if (altitudeGain > 5) {
       maxAltitudeGain += altitudeGain;
     }
+
+    totalDistance += haversineDistance(
+      fixes[i].latitude,
+      fixes[i].longitude,
+      fixes[i - 1].latitude,
+      fixes[i - 1].longitude,
+    );
   }
-  return maxAltitudeGain;
+
+  return { maxAltitudeGain, totalDistance };
 };
 
 const calculateMaxRates = (elev, time, windowSizeSeconds = 30) => {
@@ -79,36 +89,92 @@ const calculateMaxRates = (elev, time, windowSizeSeconds = 30) => {
   return { maxClimb, maxSink };
 };
 
+// const calculateTotalLegDistance = (startPoint, endPoint, tp, legs) => {
+//   let totalLegDistance = 0;
+//   let previousPoint = startPoint;
+
+//   console.log('Start Point:', startPoint);
+//   console.log('End Point:', endPoint);
+//   console.log('Turn Points:', tp);
+//   console.log('Legs:', legs);
+
+//   if (tp.length > 0) {
+//     const initialDistance = haversineDistance(previousPoint.latitude, previousPoint.longitude, tp[0].y, tp[0].x);
+//     totalLegDistance += initialDistance;
+//     previousPoint = { latitude: tp[0].y, longitude: tp[0].x };
+//     console.log(`Initial Distance (${previousPoint.latitude}, ${previousPoint.longitude}): ${initialDistance}`);
+//   }
+
+//   legs.forEach((leg, index) => {
+//     totalLegDistance += leg.d;
+//     previousPoint = { latitude: leg.finish.latitude, longitude: leg.finish.longitude };
+//     console.log(`Leg ${index + 1} Distance: ${leg.d}`);
+//   });
+
+//   if (previousPoint.latitude && previousPoint.longitude && endPoint.latitude && endPoint.longitude) {
+//     const finalDistance = haversineDistance(
+//       previousPoint.latitude,
+//       previousPoint.longitude,
+//       endPoint.latitude,
+//       endPoint.longitude,
+//     );
+//     totalLegDistance += finalDistance;
+//     console.log(`Final Distance (${previousPoint.latitude}, ${previousPoint.longitude}): ${finalDistance}`);
+//   } else {
+//     console.error(
+//       `Invalid final coordinates for haversineDistance: (${previousPoint.latitude}, ${previousPoint.longitude}), (${endPoint.latitude}, ${endPoint.longitude})`,
+//     );
+//   }
+
+//   console.log('Total Leg Distance:', totalLegDistance);
+//   return totalLegDistance;
+// };
+
 const calculateTotalLegDistance = (startPoint, endPoint, tp, legs) => {
+  console.log('Start Point:', startPoint);
+  console.log('End Point:', endPoint);
+  console.log('Turn Points:', tp);
+  console.log('Legs:', legs);
+
   let totalLegDistance = 0;
   let previousPoint = startPoint;
 
   totalLegDistance += haversineDistance(previousPoint.latitude, previousPoint.longitude, tp[0].y, tp[0].x);
+  console.log(`Initial Leg Distance: ${totalLegDistance}`);
   previousPoint = tp[0];
 
-  legs.forEach((leg) => {
+  legs.forEach((leg, index) => {
     totalLegDistance += leg.d;
+    console.log(`Leg ${index + 1} Distance: ${leg.d}`);
     previousPoint = leg.finish;
   });
 
-  totalLegDistance += haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
+  if (previousPoint.y && previousPoint.x && endPoint.latitude && endPoint.longitude) {
+    const finalLegDistance = haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
+    totalLegDistance += finalLegDistance;
+    console.log(`Final Leg Distance: ${finalLegDistance}`);
+  } else {
+    console.error(
+      `Invalid final coordinates for haversineDistance: (${previousPoint.y}, ${previousPoint.x}), (${endPoint.latitude}, ${endPoint.longitude})`,
+    );
+  }
 
+  console.log('Total Leg Distance:', totalLegDistance);
   return totalLegDistance;
 };
 
-const extractFlightStatisticsTest = (result) => {
+const extractFlightStatistics = (result) => {
   const { scoreInfo, opt } = result;
-  const { distance, score, tp, legs, cp, ep } = scoreInfo;
+  const { distance, score, tp, legs, ep, cp } = scoreInfo;
   const { flight } = opt;
   const { pilot, gliderType, site, date, fixes } = flight;
-
   const launchTime = fixes[0].timestamp;
   const landingTime = fixes[fixes.length - 1].timestamp;
   const flightDurationSeconds = (landingTime - launchTime) / 1000; // Convert milliseconds to seconds
   const flightDuration = formatDuration(flightDurationSeconds);
 
   const maxAltitude = Math.max(...fixes.map((fix) => fix.gpsAltitude));
-  const maxAltitudeGain = calculateMaxAltitudeGain(fixes);
+  const { maxAltitudeGain, totalDistance } = calculateMaxAltitudeGainAndDistance(fixes);
 
   const turnpointsDuration =
     (ep ? fixes[ep.finish.r].timestamp - fixes[ep.start.r].timestamp : 0) ||
@@ -245,7 +311,7 @@ const extractFlightStatisticsTest = (result) => {
   return {
     points,
     pilot,
-    date,
+    date: new Date(date),
     site,
     classification: opt.scoring.name,
     score,
@@ -263,7 +329,10 @@ const extractFlightStatisticsTest = (result) => {
     maxAltitude,
     maxAltitudeGain,
     gliderType,
+    totalDistance: parseFloat(totalDistance.toFixed(2)),
   };
 };
 
-module.exports = { extractFlightStatisticsTest };
+module.exports = {
+  extractFlightStatistics,
+};

@@ -176,12 +176,7 @@ const calculateTotalLegDistance = (startPoint: Fix, endPoint: Fix, tp: { x: numb
     previousPoint = leg.finish;
   });
 
-  totalLegDistance += haversineDistance(
-    previousPoint.latitude,
-    previousPoint.longitude,
-    endPoint.latitude,
-    endPoint.longitude,
-  );
+  totalLegDistance += haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
 
   return totalLegDistance;
 };
@@ -314,12 +309,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     previousPoint = leg.finish;
   });
 
-  legDistance = haversineDistance(
-    previousPoint.latitude,
-    previousPoint.longitude,
-    endPoint.latitude,
-    endPoint.longitude,
-  );
+  legDistance = haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
   addLegDetails(legDistance, freeLegDetails, totalLegDistance);
 
   let maxSpeed = -Infinity;
@@ -356,7 +346,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   return {
     points,
     pilot,
-    date: new Date(date),
+    date,
     site,
     classification: opt.scoring.name,
     score,

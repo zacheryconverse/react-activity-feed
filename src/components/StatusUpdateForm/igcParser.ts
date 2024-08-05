@@ -176,7 +176,8 @@ const calculateTotalLegDistance = (startPoint: Fix, endPoint: Fix, tp: { x: numb
     previousPoint = leg.finish;
   });
 
-  totalLegDistance += haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
+  // leave last leg out
+  // totalLegDistance += haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
 
   return totalLegDistance;
 };

@@ -570,7 +570,8 @@ export function useStatusUpdateForm<
     orderedImages.every((upload) => upload.state !== 'uploading') &&
     orderedFiles.every((upload) => upload.state !== 'uploading') &&
     orderedIgcs.every((upload) => upload.state !== 'uploading') &&
-    !isOgScraping;
+    !isOgScraping &&
+    !uploadError;
 
   const addActivity = async () => {
     const activity: NewActivity<AT> = {

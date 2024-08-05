@@ -111,7 +111,11 @@ export function StatusUpdateForm<
           <PanelHeading>{Header ?? <Title>{t('New Post')}</Title>}</PanelHeading>
 
           <PanelContent>
-            {state.uploadError && <div className="error-message">{state.uploadError}</div>}
+            {state.uploadError && (
+              <div style={{ color: 'red' }} className="error-message">
+                {state.uploadError}
+              </div>
+            )}
             <div style={{ display: 'flex' }}>
               {state.userData.profileImage && (
                 <div style={{ marginRight: '16px' }}>

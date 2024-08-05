@@ -89,47 +89,6 @@ const calculateMaxRates = (elev, time, windowSizeSeconds = 30) => {
   return { maxClimb, maxSink };
 };
 
-// const calculateTotalLegDistance = (startPoint, endPoint, tp, legs) => {
-//   let totalLegDistance = 0;
-//   let previousPoint = startPoint;
-
-//   console.log('Start Point:', startPoint);
-//   console.log('End Point:', endPoint);
-//   console.log('Turn Points:', tp);
-//   console.log('Legs:', legs);
-
-//   if (tp.length > 0) {
-//     const initialDistance = haversineDistance(previousPoint.latitude, previousPoint.longitude, tp[0].y, tp[0].x);
-//     totalLegDistance += initialDistance;
-//     previousPoint = { latitude: tp[0].y, longitude: tp[0].x };
-//     console.log(`Initial Distance (${previousPoint.latitude}, ${previousPoint.longitude}): ${initialDistance}`);
-//   }
-
-//   legs.forEach((leg, index) => {
-//     totalLegDistance += leg.d;
-//     previousPoint = { latitude: leg.finish.latitude, longitude: leg.finish.longitude };
-//     console.log(`Leg ${index + 1} Distance: ${leg.d}`);
-//   });
-
-//   if (previousPoint.latitude && previousPoint.longitude && endPoint.latitude && endPoint.longitude) {
-//     const finalDistance = haversineDistance(
-//       previousPoint.latitude,
-//       previousPoint.longitude,
-//       endPoint.latitude,
-//       endPoint.longitude,
-//     );
-//     totalLegDistance += finalDistance;
-//     console.log(`Final Distance (${previousPoint.latitude}, ${previousPoint.longitude}): ${finalDistance}`);
-//   } else {
-//     console.error(
-//       `Invalid final coordinates for haversineDistance: (${previousPoint.latitude}, ${previousPoint.longitude}), (${endPoint.latitude}, ${endPoint.longitude})`,
-//     );
-//   }
-
-//   console.log('Total Leg Distance:', totalLegDistance);
-//   return totalLegDistance;
-// };
-
 const calculateTotalLegDistance = (startPoint, endPoint, tp, legs) => {
   console.log('Start Point:', startPoint);
   console.log('End Point:', endPoint);
@@ -149,15 +108,15 @@ const calculateTotalLegDistance = (startPoint, endPoint, tp, legs) => {
     previousPoint = leg.finish;
   });
 
-  if (previousPoint.y && previousPoint.x && endPoint.latitude && endPoint.longitude) {
-    const finalLegDistance = haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
-    totalLegDistance += finalLegDistance;
-    console.log(`Final Leg Distance: ${finalLegDistance}`);
-  } else {
-    console.error(
-      `Invalid final coordinates for haversineDistance: (${previousPoint.y}, ${previousPoint.x}), (${endPoint.latitude}, ${endPoint.longitude})`,
-    );
-  }
+  // if (previousPoint.y && previousPoint.x && endPoint.latitude && endPoint.longitude) {
+  //   const finalLegDistance = haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
+  //   totalLegDistance += finalLegDistance;
+  //   console.log(`Final Leg Distance: ${finalLegDistance}`);
+  // } else {
+  //   console.error(
+  //     `Invalid final coordinates for haversineDistance: (${previousPoint.y}, ${previousPoint.x}), (${endPoint.latitude}, ${endPoint.longitude})`,
+  //   );
+  // }
 
   console.log('Total Leg Distance:', totalLegDistance);
   return totalLegDistance;

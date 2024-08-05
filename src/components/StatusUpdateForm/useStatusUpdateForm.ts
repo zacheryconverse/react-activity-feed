@@ -206,6 +206,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
   const [images, setImages] = useState<ImagesState>(defaultImageState);
   const [files, setFiles] = useState<FilesState>(defaultFileState);
   const [igcs, setIgcs] = useState<IgcState>(defaultIgcState);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const reqInProgress = useRef<Record<string, boolean>>({});
 
@@ -297,6 +298,8 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
           };
           return { ...prevState };
         });
+
+        setUploadError(null); // Clear any previous error message
       } catch (error) {
         console.error('Error uploading IGC file:', error.message);
 
@@ -306,6 +309,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
           ? 'The IGC file could not be parsed. Please check the file for any formatting errors or unsupported headers.'
           : 'An unexpected error occurred while uploading the IGC file. Please try again.';
 
+        setUploadError(errorMessage); // Set the error message to state
         logErr(new Error(errorMessage), 'upload-igc');
         setIgcs((prevState) => {
           prevState.data[id].state = 'failed';
@@ -484,6 +488,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     removeFile,
     removeImage,
     removeIgc,
+    uploadError,
   };
 };
 
@@ -538,6 +543,7 @@ export function useStatusUpdateForm<
     removeFile,
     removeImage,
     removeIgc,
+    uploadError,
   } = useUpload({ client: client as StreamClient, logErr });
 
   const resetState = useCallback(() => {
@@ -675,5 +681,6 @@ export function useStatusUpdateForm<
     removeImage,
     removeIgc,
     onPaste,
+    uploadError,
   };
 }

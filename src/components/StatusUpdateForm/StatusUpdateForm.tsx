@@ -111,6 +111,7 @@ export function StatusUpdateForm<
           <PanelHeading>{Header ?? <Title>{t('New Post')}</Title>}</PanelHeading>
 
           <PanelContent>
+            {state.uploadError && <div className="error-message">{state.uploadError}</div>}
             <div style={{ display: 'flex' }}>
               {state.userData.profileImage && (
                 <div style={{ marginRight: '16px' }}>
@@ -128,13 +129,11 @@ export function StatusUpdateForm<
                 value: state.text,
               })}
             </div>
-
             {state.isOgScraping && (
               <div className="raf-status-update-form__og-loading">
                 <LoadingIndicator /> {t('Getting website data...')}
               </div>
             )}
-
             {state.activeOg && (
               <div style={{ margin: '8px 0' }}>
                 {!state.activeOg.videos && !state.activeOg.audios ? (
@@ -147,7 +146,6 @@ export function StatusUpdateForm<
                 )}
               </div>
             )}
-
             {state.availableOg && state.availableOg.length > 1 && (
               <ol className="raf-status-update-form__url-list">
                 {state.availableOg.map(({ url, title }) => (
@@ -169,7 +167,6 @@ export function StatusUpdateForm<
                 ))}
               </ol>
             )}
-
             {state.images.order.length > 0 && (
               <ImagePreviewer
                 imageUploads={state.images.order.map((id) => state.images.data[id]) as ImageUpload[]}
@@ -178,7 +175,6 @@ export function StatusUpdateForm<
                 handleFiles={state.uploadNewFiles}
               />
             )}
-
             {state.files.order.length > 0 && (
               <FilePreviewer
                 uploads={state.files.order.map((id) => state.files.data[id]) as FileUpload[]}
@@ -187,7 +183,6 @@ export function StatusUpdateForm<
                 handleFiles={state.uploadNewFiles}
               />
             )}
-
             {state.igcs.order.length > 0 && (
               <FilePreviewer
                 uploads={state.igcs.order.map((id) => state.igcs.data[id]) as FileUpload[]}
@@ -196,7 +191,6 @@ export function StatusUpdateForm<
                 handleFiles={state.uploadNewFiles}
               />
             )}
-
             {/* {state.videos.order.length > 0 && (
               <VideoPreviewer
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any

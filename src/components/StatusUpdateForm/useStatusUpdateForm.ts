@@ -259,22 +259,35 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     });
   }, []);
 
-  const uploadNewIgc = useCallback(async (file: File) => {
-    const id = generateRandomId();
-    setIgcs(({ data }) => {
-      data[id] = { id, file, state: 'uploading' };
-      return { data: { ...data }, order: [id] };
-    });
+  const uploadNewIgc = useCallback(
+    async (file: File) => {
+      const id = generateRandomId();
+      setIgcs(({ data }) => {
+        data[id] = { id, file, state: 'uploading' };
+        return { data: { ...data }, order: [id] };
+      });
 
-    try {
-      const igcContent = await file.text();
-      const igcData = parseIgcFile(igcContent);
-      // console.log('igcContent:', igcContent, 'igcData', igcData, 'file', file);
-      if (igcData) {
+      try {
+        const igcContent = await file.text();
+        console.log('IGC File Content:', igcContent);
+
+        // Validate content
+        if (!igcContent || typeof igcContent !== 'string') {
+          throw new Error('Invalid IGC file content');
+        }
+
+        const igcData = parseIgcFile(igcContent);
+        console.log('Parsed IGC Data:', igcData);
+
+        if (!igcData) {
+          throw new Error('Failed to parse IGC file');
+        }
+
         const result = solver(igcData, scoringRules.XContest).next().value;
         const flightStats = extractFlightStatistics(result);
         const url = await client.files.upload(file);
-        console.log('url', url, 'flightStats', flightStats);
+        console.log('Uploaded URL:', url, 'Flight Statistics:', flightStats);
+
         setIgcs((prevState) => {
           prevState.data[id] = {
             ...prevState.data[id],
@@ -284,20 +297,17 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
           };
           return { ...prevState };
         });
-      } else {
+      } catch (error) {
+        console.error('Error uploading IGC file:', error);
+        logErr(error, 'upload-igc');
         setIgcs((prevState) => {
           prevState.data[id].state = 'failed';
           return { ...prevState };
         });
       }
-    } catch (error) {
-      logErr(error, 'upload-igc');
-      setIgcs((prevState) => {
-        prevState.data[id].state = 'failed';
-        return { ...prevState };
-      });
-    }
-  }, []);
+    },
+    [client, logErr],
+  );
 
   const uploadImage = useCallback(async (id: string, img: ImageUploadState) => {
     setImages((prevState) => {

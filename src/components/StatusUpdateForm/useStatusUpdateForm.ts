@@ -298,8 +298,15 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
           return { ...prevState };
         });
       } catch (error) {
-        console.error('Error uploading IGC file:', error);
-        logErr(error, 'upload-igc');
+        console.error('Error uploading IGC file:', error.message);
+
+        const errorMessage = error.message.includes('Invalid IGC file content')
+          ? 'The uploaded file does not contain valid IGC content. Please ensure the file follows the IGC format.'
+          : error.message.includes('Failed to parse IGC file')
+          ? 'The IGC file could not be parsed. Please check the file for any formatting errors or unsupported headers.'
+          : 'An unexpected error occurred while uploading the IGC file. Please try again.';
+
+        logErr(new Error(errorMessage), 'upload-igc');
         setIgcs((prevState) => {
           prevState.data[id].state = 'failed';
           return { ...prevState };

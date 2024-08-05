@@ -277,11 +277,19 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
           throw new Error('Invalid IGC file content');
         }
 
-        const igcData = parseIgcFile(igcContent);
+        let igcData = parseIgcFile(igcContent);
         console.log('Parsed IGC Data:', igcData);
 
         if (!igcData) {
-          throw new Error('Failed to parse IGC file');
+          // Attempt to reformat the file content
+          const reformattedContent = reformatIgcContent(igcContent);
+          console.log('Reformatted IGC Content:', reformattedContent);
+          igcData = parseIgcFile(reformattedContent);
+          console.log('Parsed Reformatted IGC Data:', igcData);
+
+          if (!igcData) {
+            throw new Error('Failed to parse IGC file');
+          }
         }
 
         const result = solver(igcData, scoringRules.XContest).next().value;
@@ -319,6 +327,22 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     },
     [client, logErr],
   );
+
+  function reformatIgcContent(content) {
+    const lines = content.split('\n');
+    const reformattedLines = lines.map((line) => {
+      if (line.startsWith('HFDTEDATE:')) {
+        return line.replace('HFDTEDATE:', 'HFDTE');
+      }
+      if (line.startsWith('HSCCLCOMPETITION CLASS:')) {
+        return line.replace('HSCCLCOMPETITION CLASS:', 'HFCCLCOMPETITIONCLASS:');
+      }
+      // Handle other reformatting cases here
+      return line;
+    });
+
+    return reformattedLines.join('\n');
+  }
 
   const uploadImage = useCallback(async (id: string, img: ImageUploadState) => {
     setImages((prevState) => {

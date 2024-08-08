@@ -261,7 +261,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
   }, []);
 
   const uploadNewIgc = useCallback(
-    async (file: File) => {
+    async (file) => {
       const id = generateRandomId();
       setIgcs(({ data }) => {
         data[id] = { id, file, state: 'uploading' };
@@ -269,7 +269,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
       });
 
       try {
-        const igcContent = await file.text();
+        let igcContent = await file.text();
         console.log('IGC File Content:', igcContent);
 
         // Validate content
@@ -282,14 +282,19 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
 
         if (!igcData) {
           // Attempt to reformat the file content
-          const reformattedContent = reformatIgcContent(igcContent);
-          console.log('Reformatted IGC Content:', reformattedContent);
-          igcData = parseIgcFile(reformattedContent);
+          igcContent = reformatIgcContent(igcContent);
+          console.log('Reformatted IGC Content:', igcContent);
+          igcData = parseIgcFile(igcContent);
           console.log('Parsed Reformatted IGC Data:', igcData);
 
           if (!igcData) {
             throw new Error('Failed to parse IGC file');
           }
+
+          // Create a new File object with the reformatted content
+          file = new File([igcContent], file.name, {
+            type: file.type,
+          });
         }
 
         const result = solver(igcData, scoringRules.XContest).next().value;
@@ -328,7 +333,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     [client, logErr],
   );
 
-  function reformatIgcContent(content) {
+  const reformatIgcContent = (content) => {
     const lines = content.split('\n');
     const reformattedLines = lines.map((line) => {
       if (line.startsWith('HFDTEDATE:')) {
@@ -342,7 +347,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
     });
 
     return reformattedLines.join('\n');
-  }
+  };
 
   const uploadImage = useCallback(async (id: string, img: ImageUploadState) => {
     setImages((prevState) => {

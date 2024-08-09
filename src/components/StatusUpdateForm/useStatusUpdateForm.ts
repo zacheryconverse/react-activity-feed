@@ -272,7 +272,6 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         let igcContent = await file.text();
         console.log('IGC File Content:', igcContent);
 
-        // Validate content
         if (!igcContent || typeof igcContent !== 'string') {
           throw new Error('Invalid IGC file content');
         }
@@ -281,7 +280,6 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         console.log('Parsed IGC Data:', igcData);
 
         if (!igcData) {
-          // Attempt to reformat the file content
           igcContent = reformatIgcContent(igcContent);
           console.log('Reformatted IGC Content:', igcContent);
           igcData = parseIgcFile(igcContent);
@@ -291,7 +289,6 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
             throw new Error('Failed to parse IGC file');
           }
 
-          // Create a new File object with the reformatted content
           file = new File([igcContent], file.name, {
             type: file.type,
           });
@@ -306,13 +303,13 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
           prevState.data[id] = {
             ...prevState.data[id],
             url: url.file,
-            state: 'finished',
+            state: flightStats ? 'finished' : 'uploading',
             data: flightStats,
           };
           return { ...prevState };
         });
 
-        setUploadError(null); // Clear any previous error message
+        setUploadError(null);
       } catch (error) {
         console.error('Error uploading IGC file:', error.message);
 
@@ -322,7 +319,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
           ? 'The IGC file could not be parsed. Please check the file for any formatting errors or unsupported headers.'
           : 'An unexpected error occurred while uploading the IGC file. Please try again.';
 
-        setUploadError(errorMessage); // Set the error message to state
+        setUploadError(errorMessage);
         logErr(new Error(errorMessage), 'upload-igc');
         setIgcs((prevState) => {
           prevState.data[id].state = 'failed';

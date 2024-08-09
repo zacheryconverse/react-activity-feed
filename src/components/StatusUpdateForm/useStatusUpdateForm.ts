@@ -303,7 +303,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
           prevState.data[id] = {
             ...prevState.data[id],
             url: url.file,
-            state: flightStats ? 'finished' : 'uploading',
+            state: 'finished',
             data: flightStats,
           };
           return { ...prevState };
@@ -595,7 +595,7 @@ export function useStatusUpdateForm<
     Boolean(object()) &&
     orderedImages.every((upload) => upload.state !== 'uploading') &&
     orderedFiles.every((upload) => upload.state !== 'uploading') &&
-    orderedIgcs.every((upload) => upload.state !== 'uploading') &&
+    orderedIgcs.every((upload) => upload.state !== 'uploading' && upload.data) &&
     !isOgScraping &&
     !uploadError;
 

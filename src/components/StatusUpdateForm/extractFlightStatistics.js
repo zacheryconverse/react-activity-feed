@@ -23,18 +23,18 @@ const haversineDistance = (lat1, lon1, lat2, lon2) => {
   return R * c;
 };
 
-const formatCoordinates = (lat, lon) => {
-  const latDirection = lat >= 0 ? 'N' : 'S';
-  const lonDirection = lon >= 0 ? 'E' : 'W';
-  const formattedLat = `${Math.abs(lat).toFixed(4)}° ${latDirection}`;
-  const formattedLon = `${Math.abs(lon).toFixed(4)}° ${lonDirection}`;
-  return { formattedLat, formattedLon };
-};
+// const formatCoordinates = (lat, lon) => {
+//   const latDirection = lat >= 0 ? 'N' : 'S';
+//   const lonDirection = lon >= 0 ? 'E' : 'W';
+//   const formattedLat = `${Math.abs(lat).toFixed(4)}° ${latDirection}`;
+//   const formattedLon = `${Math.abs(lon).toFixed(4)}° ${lonDirection}`;
+//   return { formattedLat, formattedLon };
+// };
 
-const formatTime = (timestamp) => {
-  const date = new Date(timestamp);
-  return date.toISOString().substring(11, 19);
-};
+// const formatTime = (timestamp) => {
+//   const date = new Date(timestamp);
+//   return date.toISOString().substring(11, 19);
+// };
 
 const formatDuration = (seconds) => {
   const hours = Math.floor(seconds / 3600);
@@ -91,7 +91,7 @@ const calculateTotalLegDistance = (startPoint, endPoint, tp, legs) => {
     previousPoint = leg.finish;
   });
 
-  totalLegDistance += haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
+  // totalLegDistance += haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
 
   return totalLegDistance;
 };
@@ -100,7 +100,7 @@ const extractFlightStatisticsTest = (result) => {
   const { scoreInfo, opt } = result;
   const { distance, score, tp, legs, cp, ep } = scoreInfo;
   const { flight } = opt;
-  const { pilot, gliderType, site, date, fixes } = flight;
+  const { pilot, gliderType, site, date, fixes, task } = flight;
 
   const launchTime = fixes[0].timestamp;
   const landingTime = fixes[fixes.length - 1].timestamp;
@@ -121,65 +121,7 @@ const extractFlightStatisticsTest = (result) => {
     fixes.map((fix) => fix.timestamp),
   );
 
-  const points = [
-    {
-      label: 'Start',
-      time: formatTime(fixes[0].timestamp),
-      altitude: fixes[0].gpsAltitude,
-      ...formatCoordinates(fixes[0].latitude, fixes[0].longitude),
-    },
-    ...tp
-      .map((turnpoint, index) => {
-        const fix = fixes.find((f) => f.timestamp >= turnpoint.r);
-        return fix
-          ? {
-              label: `TP${index + 1}`,
-              time: formatTime(fix.timestamp),
-              altitude: fix.gpsAltitude,
-              ...formatCoordinates(fix.latitude, fix.longitude),
-            }
-          : null;
-      })
-      .filter(Boolean),
-    ...(ep
-      ? [
-          {
-            label: 'EP Start',
-            time: formatTime(fixes[ep.start.r].timestamp),
-            altitude: fixes[ep.start.r].gpsAltitude,
-            ...formatCoordinates(fixes[ep.start.r].latitude, fixes[ep.start.r].longitude),
-          },
-          {
-            label: 'EP Finish',
-            time: formatTime(fixes[ep.finish.r].timestamp),
-            altitude: fixes[ep.finish.r].gpsAltitude,
-            ...formatCoordinates(fixes[ep.finish.r].latitude, fixes[ep.finish.r].longitude),
-          },
-        ]
-      : []),
-    ...(cp
-      ? [
-          {
-            label: 'CP In',
-            time: formatTime(fixes[cp.in.r].timestamp),
-            altitude: fixes[cp.in.r].gpsAltitude,
-            ...formatCoordinates(fixes[cp.in.r].latitude, fixes[cp.in.r].longitude),
-          },
-          {
-            label: 'CP Out',
-            time: formatTime(fixes[cp.out.r].timestamp),
-            altitude: fixes[cp.out.r].gpsAltitude,
-            ...formatCoordinates(fixes[cp.out.r].latitude, fixes[cp.out.r].longitude),
-          },
-        ]
-      : []),
-    {
-      label: 'End',
-      time: formatTime(fixes[fixes.length - 1].timestamp),
-      altitude: fixes[fixes.length - 1].gpsAltitude,
-      ...formatCoordinates(fixes[fixes.length - 1].latitude, fixes[fixes.length - 1].longitude),
-    },
-  ];
+  const points = task?.points;
 
   const startPoint = fixes[0];
   const endPoint = fixes[fixes.length - 1];
@@ -212,8 +154,6 @@ const extractFlightStatisticsTest = (result) => {
   addLegDetails(legDistance, freeLegDetails, totalLegDistance);
 
   let maxSpeed = -Infinity;
-  let totalFreeDistanceTime = 0;
-  let totalFreeDistance = 0;
   const windowSize = 15;
 
   for (let i = 0; i <= fixes.length - windowSize; i++) {
@@ -235,12 +175,9 @@ const extractFlightStatisticsTest = (result) => {
     if (windowSpeed > maxSpeed) {
       maxSpeed = windowSpeed;
     }
-
-    totalFreeDistance += windowDistance;
-    totalFreeDistanceTime += windowTime;
   }
 
-  const freeDistanceAvgSpeed = (totalFreeDistance / (totalFreeDistanceTime / 3600)).toFixed(2);
+  const freeDistanceAvgSpeed = totalLegDistance / (flightDurationSeconds / 3600);
 
   return {
     points,

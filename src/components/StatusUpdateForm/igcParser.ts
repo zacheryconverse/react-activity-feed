@@ -98,19 +98,6 @@ interface Leg {
   };
 }
 
-// const formatCoordinates = (lat: number, lon: number) => {
-//   const latDirection = lat >= 0 ? 'N' : 'S';
-//   const lonDirection = lon >= 0 ? 'E' : 'W';
-//   const formattedLat = `${Math.abs(lat).toFixed(4)}° ${latDirection}`;
-//   const formattedLon = `${Math.abs(lon).toFixed(4)}° ${lonDirection}`;
-//   return { formattedLat, formattedLon };
-// };
-
-// const formatTime = (timestamp: number) => {
-//   const date = new Date(timestamp);
-//   return date.toISOString().substring(11, 19);
-// };
-
 const formatDuration = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -201,7 +188,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   const { scoreInfo, opt } = result;
   const { distance, score, tp, legs, ep, cp } = scoreInfo;
   const { flight } = opt;
-  const { pilot, gliderType, site, date, fixes, task } = flight;
+  const { pilot, gliderType, site, date, fixes } = flight;
 
   const launchTime = fixes[0].timestamp;
   const landingTime = fixes[fixes.length - 1].timestamp;
@@ -221,8 +208,6 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     fixes.map((fix) => fix.gpsAltitude),
     fixes.map((fix) => fix.timestamp),
   );
-
-  const points = task?.points;
 
   const startPoint = fixes[0];
   const endPoint = fixes[fixes.length - 1];
@@ -280,6 +265,80 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
 
   const freeDistanceAvgSpeed = totalLegDistance / (flightDurationSeconds / 3600);
 
+  const points = [];
+
+  points.push({
+    label: 'First Fix',
+    latitude: fixes[0].latitude,
+    longitude: fixes[0].longitude,
+    time: fixes[0].time,
+  });
+
+  if (cp && cp.in) {
+    const cpInFix = fixes[cp.in.r];
+    points.push({
+      label: 'CP In',
+      latitude: cp.in.y,
+      longitude: cp.in.x,
+      time: cpInFix.time,
+    });
+  } else if (ep && ep.start) {
+    const epStartFix = fixes[ep.start.r];
+    points.push({
+      label: 'Start',
+      latitude: ep.start.y,
+      longitude: ep.start.x,
+      time: epStartFix.time,
+    });
+  }
+
+  if (tp && tp.length) {
+    tp.forEach((turnpoint, index) => {
+      const tpFix = fixes[turnpoint.r];
+      points.push({
+        label: `TP${index + 1}`,
+        latitude: turnpoint.y,
+        longitude: turnpoint.x,
+        time: tpFix.time,
+      });
+    });
+  }
+
+  if (cp && cp.out) {
+    const cpOutFix = fixes[cp.out.r];
+    points.push({
+      label: 'CP Out',
+      latitude: cp.out.y,
+      longitude: cp.out.x,
+      time: cpOutFix.time,
+    });
+  } else if (ep && ep.finish) {
+    const epFinishFix = fixes[ep.finish.r];
+    points.push({
+      label: 'Finish',
+      latitude: ep.finish.y,
+      longitude: ep.finish.x,
+      time: epFinishFix.time,
+    });
+  }
+
+  points.push({
+    label: 'Last Fix',
+    latitude: fixes[fixes.length - 1].latitude,
+    longitude: fixes[fixes.length - 1].longitude,
+    time: fixes[fixes.length - 1].time,
+  });
+
+  let totalPointsDistance = 0;
+  for (let i = 0; i < points.length - 1; i++) {
+    totalPointsDistance += haversineDistance(
+      points[i].latitude,
+      points[i].longitude,
+      points[i + 1].latitude,
+      points[i + 1].longitude,
+    );
+  }
+
   return {
     points,
     pilot,
@@ -293,7 +352,8 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     routeLegDetails,
     freeLegDetails,
     flightDuration,
-    freeDistance: parseFloat(totalLegDistance.toFixed(2)),
+    freeDistance: parseFloat(totalPointsDistance.toFixed(2)),
+    totalLegDistance: parseFloat(totalLegDistance.toFixed(2)),
     freeDistanceAvgSpeed: parseFloat(freeDistanceAvgSpeed),
     maxSpeed: parseFloat(maxSpeed.toFixed(2)),
     maxClimb: parseFloat(maxClimb.toFixed(1)),
@@ -301,6 +361,6 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     maxAltitude,
     maxAltitudeGain,
     gliderType,
-    totalDistance: parseFloat(totalDistance.toFixed(2)),
+    tracklogLength: parseFloat(totalDistance.toFixed(2)),
   };
 };

@@ -270,20 +270,16 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
 
       try {
         let igcContent = await file.text();
-        console.log('IGC File Content:', igcContent);
 
         if (!igcContent || typeof igcContent !== 'string') {
           throw new Error('Invalid IGC file content');
         }
 
         let igcData = parseIgcFile(igcContent);
-        console.log('Parsed IGC Data:', igcData);
 
         if (!igcData) {
           igcContent = reformatIgcContent(igcContent);
-          console.log('Reformatted IGC Content:', igcContent);
           igcData = parseIgcFile(igcContent);
-          console.log('Parsed Reformatted IGC Data:', igcData);
 
           if (!igcData) {
             throw new Error('Failed to parse IGC file');
@@ -297,7 +293,6 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         const result = solver(igcData, scoringRules.XContest).next().value;
         const flightStats = extractFlightStatistics(result);
         const url = await client.files.upload(file);
-        console.log('Uploaded URL:', url, 'Flight Statistics:', flightStats);
 
         setIgcs((prevState) => {
           prevState.data[id] = {

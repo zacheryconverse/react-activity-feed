@@ -96,7 +96,7 @@ const calculateTotalLegDistance = (startPoint, endPoint, tp, legs) => {
 const extractFlightStatisticsTest = (result) => {
   const { scoreInfo, opt } = result;
   const { distance, score, tp, legs, cp, ep } = scoreInfo;
-  const { flight } = opt;
+  const { flight, scoring } = opt;
   const { pilot, gliderType, site, date, fixes } = flight;
 
   const launchTime = fixes[0].timestamp;
@@ -111,7 +111,6 @@ const extractFlightStatisticsTest = (result) => {
     (ep ? fixes[ep.finish.r].timestamp - fixes[ep.start.r].timestamp : 0) ||
     (cp ? fixes[cp.out.r].timestamp - fixes[cp.in.r].timestamp : 0);
   const turnpointsDurationInHours = turnpointsDuration / 3600000;
-  const avgSpeed = (distance / turnpointsDurationInHours).toFixed(2); // km/h
 
   const { maxClimb, maxSink } = calculateMaxRates(
     fixes.map((fix) => fix.gpsAltitude),
@@ -171,8 +170,6 @@ const extractFlightStatisticsTest = (result) => {
       maxSpeed = windowSpeed;
     }
   }
-
-  const freeDistanceAvgSpeed = totalLegDistance / (flightDurationSeconds / 3600);
 
   const points = [];
 
@@ -248,6 +245,10 @@ const extractFlightStatisticsTest = (result) => {
     );
   }
 
+  const routeDistance = score / scoring?.multiplier;
+  const avgRouteSpeed = (routeDistance / turnpointsDurationInHours).toFixed(2);
+  const freeDistanceAvgSpeed = totalPointsDistance / (flightDurationSeconds / 3600);
+
   return {
     points,
     pilot,
@@ -255,15 +256,16 @@ const extractFlightStatisticsTest = (result) => {
     site,
     classification: opt.scoring.name,
     score,
-    routeDistance: distance,
+    routeDistance,
+    distance,
     routeDuration: formatDuration(turnpointsDuration / 1000),
-    avgSpeed: parseFloat(avgSpeed),
+    avgRouteSpeed: parseFloat(avgRouteSpeed),
     routeLegDetails,
     freeLegDetails,
     flightDuration,
     freeDistance: parseFloat(totalPointsDistance.toFixed(2)),
     totalLegDistance: parseFloat(totalLegDistance.toFixed(2)),
-    freeDistanceAvgSpeed: parseFloat(freeDistanceAvgSpeed),
+    freeDistanceAvgSpeed: parseFloat(freeDistanceAvgSpeed).toFixed(2),
     maxSpeed: parseFloat(maxSpeed.toFixed(2)),
     maxClimb: parseFloat(maxClimb.toFixed(1)),
     maxSink: parseFloat((-maxSink).toFixed(1)),

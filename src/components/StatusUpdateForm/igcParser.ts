@@ -187,12 +187,12 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 export const extractFlightStatistics = (result: Result): FlightStatistics | null => {
   const { scoreInfo, opt } = result;
   const { distance, score, tp, legs, ep, cp } = scoreInfo;
-  const { flight } = opt;
+  const { flight, scoring } = opt;
   const { pilot, gliderType, site, date, fixes } = flight;
 
   const launchTime = fixes[0].timestamp;
   const landingTime = fixes[fixes.length - 1].timestamp;
-  const flightDurationSeconds = (landingTime - launchTime) / 1000; // Convert milliseconds to seconds
+  const flightDurationSeconds = (landingTime - launchTime) / 1000;
   const flightDuration = formatDuration(flightDurationSeconds);
 
   const maxAltitude = Math.max(...fixes.map((fix) => fix.gpsAltitude));
@@ -202,7 +202,6 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     (ep ? fixes[ep.finish.r].timestamp - fixes[ep.start.r].timestamp : 0) ||
     (cp ? fixes[cp.out.r].timestamp - fixes[cp.in.r].timestamp : 0);
   const turnpointsDurationInHours = turnpointsDuration / 3600000;
-  const avgSpeed = (distance / turnpointsDurationInHours).toFixed(2); // km/h
 
   const { maxClimb, maxSink } = calculateMaxRates(
     fixes.map((fix) => fix.gpsAltitude),
@@ -262,8 +261,6 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
       maxSpeed = windowSpeed;
     }
   }
-
-  const freeDistanceAvgSpeed = totalLegDistance / (flightDurationSeconds / 3600);
 
   const points = [];
 
@@ -339,6 +336,10 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     );
   }
 
+  const routeDistance = score / scoring?.multiplier;
+  const avgRouteSpeed = (routeDistance / turnpointsDurationInHours).toFixed(2);
+  const freeDistanceAvgSpeed = totalPointsDistance / (flightDurationSeconds / 3600);
+
   return {
     points,
     pilot,
@@ -346,21 +347,22 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     site,
     classification: opt.scoring.name,
     score,
-    routeDistance: distance,
+    routeDistance,
+    distance,
     routeDuration: formatDuration(turnpointsDuration / 1000),
-    avgSpeed: parseFloat(avgSpeed),
+    avgRouteSpeed: parseFloat(avgRouteSpeed),
     routeLegDetails,
     freeLegDetails,
     flightDuration,
     freeDistance: parseFloat(totalPointsDistance.toFixed(2)),
     totalLegDistance: parseFloat(totalLegDistance.toFixed(2)),
-    freeDistanceAvgSpeed: parseFloat(freeDistanceAvgSpeed),
+    freeDistanceAvgSpeed: parseFloat(freeDistanceAvgSpeed).toFixed(2),
     maxSpeed: parseFloat(maxSpeed.toFixed(2)),
     maxClimb: parseFloat(maxClimb.toFixed(1)),
     maxSink: parseFloat((-maxSink).toFixed(1)),
     maxAltitude,
     maxAltitudeGain,
     gliderType,
-    tracklogLength: parseFloat(totalDistance.toFixed(2)),
+    totalDistance: parseFloat(totalDistance.toFixed(2)),
   };
 };

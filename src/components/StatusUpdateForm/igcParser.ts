@@ -224,7 +224,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
 
   const closestFix = (timestamp, fixes) => {
     return fixes.reduce((prev, curr) =>
-      Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp) ? curr : prev
+      Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp) ? curr : prev,
     );
   };
 

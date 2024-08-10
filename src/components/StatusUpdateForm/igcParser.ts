@@ -222,6 +222,12 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     fixes.map((fix) => fix.timestamp),
   );
 
+  const closestFix = (timestamp, fixes) => {
+    return fixes.reduce((prev, curr) =>
+      Math.abs(curr.timestamp - timestamp) < Math.abs(prev.timestamp - timestamp) ? curr : prev
+    );
+  };
+
   const points: Point[] = [
     {
       label: 'Start',
@@ -231,7 +237,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     },
     ...(tp
       .map((turnpoint, index) => {
-        const fix = fixes.find((f) => f.timestamp === turnpoint.r);
+        const fix = closestFix(turnpoint.r, fixes);
         return fix
           ? {
               label: `TP${index + 1}`,

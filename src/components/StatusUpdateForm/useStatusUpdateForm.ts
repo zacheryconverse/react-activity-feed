@@ -293,6 +293,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         const result = solver(igcData, scoringRules.XContest).next().value;
         const flightStats = extractFlightStatistics(result);
         const url = await client.files.upload(file);
+        console.log('Flight Statistics:', flightStats);
 
         setIgcs((prevState) => {
           prevState.data[id] = {

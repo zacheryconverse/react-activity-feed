@@ -231,7 +231,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     },
     ...(tp
       .map((turnpoint, index) => {
-        const fix = fixes.find((f) => f.timestamp >= turnpoint.r);
+        const fix = fixes.find((f) => f.timestamp === turnpoint.r);
         return fix
           ? {
               label: `TP${index + 1}`,
@@ -313,8 +313,6 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   addLegDetails(legDistance, freeLegDetails, totalLegDistance);
 
   let maxSpeed = -Infinity;
-  let totalFreeDistanceTime = 0;
-  let totalFreeDistance = 0;
   const windowSize = 15;
 
   for (let i = 0; i <= fixes.length - windowSize; i++) {
@@ -336,14 +334,9 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     if (windowSpeed > maxSpeed) {
       maxSpeed = windowSpeed;
     }
-
-    totalFreeDistance += windowDistance;
-    totalFreeDistanceTime += windowTime;
   }
 
-  const freeDistanceAvgSpeed = (totalFreeDistance / (totalFreeDistanceTime / 3600)).toFixed(2);
-  console.log('totalFreeDistance', totalFreeDistance);
-  console.log('totalLegDistance', totalLegDistance);
+  const freeDistanceAvgSpeed = totalLegDistance / (flightDurationSeconds / 3600);
   return {
     points,
     pilot,

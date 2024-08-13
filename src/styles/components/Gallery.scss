@@ -114,7 +114,7 @@
   .img {
     &--last {
       position: relative;
-      z-index: $z1;
+      z-index: 6;
       display: flex;
       justify-content: center;
       align-items: center;

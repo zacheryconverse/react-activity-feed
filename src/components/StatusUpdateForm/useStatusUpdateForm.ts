@@ -657,7 +657,7 @@ export function useStatusUpdateForm<
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
       console.log('event.clipboardData', event.clipboardData);
       console.log('items', items);
-      if (items) items.forEach((item) => console.log('item', item));
+
       console.log('pastedText', pastedText);
       console.log('dataTransferItemsHaveFiles(items)', dataTransferItemsHaveFiles(items));
       if (!dataTransferItemsHaveFiles(items)) {

@@ -657,6 +657,8 @@ export function useStatusUpdateForm<
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
       console.log('event.clipboardData', event.clipboardData);
       console.log('items', items);
+      console.log('pastedText', pastedText);
+      console.log('dataTransferItemsHaveFiles(items)', dataTransferItemsHaveFiles(items));
       if (!dataTransferItemsHaveFiles(items)) {
         const igcData = parseIgcFile(pastedText);
 

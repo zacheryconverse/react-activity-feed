@@ -11,7 +11,7 @@ describe('FeedPlaceholder', () => {
         className="raf-feed-placeholder"
       >
         <p>
-          No data to display...
+          No activity to display, yet...
         </p>
       </div>
     `);

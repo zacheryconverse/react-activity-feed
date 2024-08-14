@@ -687,9 +687,25 @@ export function useStatusUpdateForm<
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
 
       console.log('event.clipboardData', event.clipboardData);
+      console.log('types:', event.clipboardData.types);
+      console.log('files:', event.clipboardData.files);
+      console.log('items:::', event.clipboardData.items);
+      console.log('event.clipboardData JSON', JSON.stringify(event.clipboardData));
+      console.log('window.clipboardData', window.clipboardData);
       console.log('items', items);
       console.log('pastedText', pastedText);
       console.log('dataTransferItemsHaveFiles(items)', dataTransferItemsHaveFiles(items));
+      setTimeout(() => {
+        const delayedText = (event.clipboardData || window.clipboardData).getData('text');
+        console.log('Delayed pastedText:', delayedText);
+
+        // Log the delayed check results
+        if (delayedText) {
+          console.log('Clipboard content after delay:', delayedText);
+        } else {
+          console.log('No clipboard content found after delay.');
+        }
+      }, 100); // Delay by 100 milliseconds
 
       // Check if the data has files or if the text is empty
       if (dataTransferItemsHaveFiles(items) || !pastedText) {

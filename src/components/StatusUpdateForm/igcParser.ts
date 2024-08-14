@@ -19,6 +19,7 @@ export interface FlightData {
 }
 
 export const parseIgcFile = (igcFileContent: string): FlightData | null => {
+  console.log('igcFileContent:', igcFileContent);
   try {
     return parse(igcFileContent) as unknown as FlightData;
   } catch (error) {

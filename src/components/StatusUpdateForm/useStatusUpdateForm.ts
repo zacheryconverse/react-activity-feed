@@ -655,7 +655,8 @@ export function useStatusUpdateForm<
     async (event: ClipboardEvent<HTMLTextAreaElement>) => {
       const { items } = event.clipboardData;
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-
+      console.log('event.clipboardData', event.clipboardData);
+      console.log('items', items);
       if (!dataTransferItemsHaveFiles(items)) {
         const igcData = parseIgcFile(pastedText);
 
@@ -674,6 +675,7 @@ export function useStatusUpdateForm<
         let plainTextPromise: Promise<string> | undefined;
         for (let i = 0; i < items.length; i += 1) {
           const item = items[i];
+          console.log(`Item ${i}: kind = ${item.kind}, type = ${item.type}`);
           if (item.kind === 'string' && item.type === 'text/plain') {
             plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
             break;
@@ -682,6 +684,7 @@ export function useStatusUpdateForm<
 
         const fileLikes = await dataTransferItemsToFiles(items);
         if (fileLikes.length) {
+          console.log('Files found in clipboard:', fileLikes);
           uploadNewFiles(fileLikes);
           return;
         }
@@ -689,6 +692,7 @@ export function useStatusUpdateForm<
         // Fallback to regular text paste if it's not an IGC file or other file type
         if (plainTextPromise) {
           const s = await plainTextPromise;
+          console.log('Plain text promise resolved s:', s);
           insertText(s);
         }
       }

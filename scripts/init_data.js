@@ -24,7 +24,9 @@ async function main() {
     console.error('STREAM_SECRET should be set');
     return;
   }
-  const client = connect(apiKey, apiSecret);
+  const client = connect(apiKey, apiSecret, {
+    location: 'us-east',
+  });
 
   const exampleUser = client.user(exampleUserId);
   const userFeed = client.feed('user', exampleUserId);

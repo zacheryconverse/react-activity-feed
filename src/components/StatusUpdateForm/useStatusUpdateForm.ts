@@ -649,34 +649,50 @@ export function useStatusUpdateForm<
     handleOgDebounced(text);
   }, []);
 
-  const onPaste = useCallback(async (event: ClipboardEvent<HTMLTextAreaElement>) => {
-    const { items } = event.clipboardData;
-    if (!dataTransferItemsHaveFiles(items)) return;
+  const onPaste = useCallback(
+    async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+      const { items } = event.clipboardData;
+      const pastedText = (event.clipboardData || window.clipboardData).getData('text');
 
-    event.preventDefault();
-    // Get a promise for the plain text in case no files are
-    // found. This needs to be done here because chrome cleans
-    // up the DataTransferItems after resolving of a promise.
-    let plainTextPromise: Promise<string> | undefined;
-    for (let i = 0; i < items.length; i += 1) {
-      const item = items[i];
-      if (item.kind === 'string' && item.type === 'text/plain') {
-        plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
-        break;
+      if (!dataTransferItemsHaveFiles(items)) {
+        const igcData = parseIgcFile(pastedText);
+
+        if (igcData) {
+          event.preventDefault();
+          // Get a promise for the plain text in case no files are
+          // found. This needs to be done here because chrome cleans
+          // up the DataTransferItems after resolving of a promise.
+          const igcBlob = new Blob([pastedText], { type: 'text/plain' });
+          const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: 'text/plain' });
+
+          await uploadNewIgc(igcFile);
+          return;
+        }
+
+        let plainTextPromise: Promise<string> | undefined;
+        for (let i = 0; i < items.length; i += 1) {
+          const item = items[i];
+          if (item.kind === 'string' && item.type === 'text/plain') {
+            plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
+            break;
+          }
+        }
+
+        const fileLikes = await dataTransferItemsToFiles(items);
+        if (fileLikes.length) {
+          uploadNewFiles(fileLikes);
+          return;
+        }
+
+        // Fallback to regular text paste if it's not an IGC file or other file type
+        if (plainTextPromise) {
+          const s = await plainTextPromise;
+          insertText(s);
+        }
       }
-    }
-
-    const fileLikes = await dataTransferItemsToFiles(items);
-    if (fileLikes.length) {
-      uploadNewFiles(fileLikes);
-      return;
-    }
-    // fallback to regular text paste
-    if (plainTextPromise) {
-      const s = await plainTextPromise;
-      insertText(s);
-    }
-  }, []);
+    },
+    [uploadNewFiles, uploadNewIgc, insertText, parseIgcFile],
+  );
 
   return {
     userData,

@@ -651,6 +651,35 @@ export function useStatusUpdateForm<
     handleOgDebounced(text);
   }, []);
 
+  // const onPaste = useCallback(async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+  //   const { items } = event.clipboardData;
+  //   if (!dataTransferItemsHaveFiles(items)) return;
+
+  //   event.preventDefault();
+  //   // Get a promise for the plain text in case no files are
+  //   // found. This needs to be done here because chrome cleans
+  //   // up the DataTransferItems after resolving of a promise.
+  //   let plainTextPromise: Promise<string> | undefined;
+  //   for (let i = 0; i < items.length; i += 1) {
+  //     const item = items[i];
+  //     if (item.kind === 'string' && item.type === 'text/plain') {
+  //       plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
+  //       break;
+  //     }
+  //   }
+
+  //   const fileLikes = await dataTransferItemsToFiles(items);
+  //   if (fileLikes.length) {
+  //     uploadNewFiles(fileLikes);
+  //     return;
+  //   }
+  //   // fallback to regular text paste
+  //   if (plainTextPromise) {
+  //     const s = await plainTextPromise;
+  //     insertText(s);
+  //   }
+  // }, []);
+
   const onPaste = useCallback(
     async (event: ClipboardEvent<HTMLTextAreaElement>) => {
       const { items } = event.clipboardData;
@@ -660,6 +689,25 @@ export function useStatusUpdateForm<
 
       console.log('pastedText', pastedText);
       console.log('dataTransferItemsHaveFiles(items)', dataTransferItemsHaveFiles(items));
+      // Check if the data has files or if the text is empty
+      if (dataTransferItemsHaveFiles(items) || !pastedText) {
+        // Attempt to handle as a file or fallback to custom text extraction
+        for (let i = 0; i < items.length; i++) {
+          const item = items[i];
+          if (item.kind === 'file' && item.type === '') {
+            // Handle file-like clipboard data, e.g., read it as text
+            const file = item.getAsFile();
+            if (file) {
+              const textContent = await file.text();
+              // Process the extracted text
+              console.log('Extracted text from file:', textContent);
+              // You can now handle this as a regular text paste
+            }
+          }
+        }
+        return;
+      }
+
       if (!dataTransferItemsHaveFiles(items)) {
         const igcData = parseIgcFile(pastedText);
 

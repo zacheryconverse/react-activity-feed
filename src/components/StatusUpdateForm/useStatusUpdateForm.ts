@@ -732,9 +732,8 @@ export function useStatusUpdateForm<
         }
         return;
       }
-
-      // if (!dataTransferItemsHaveFiles(items)) {
-      if (pastedText) {
+      // if (pastedText) {
+      if (!dataTransferItemsHaveFiles(items)) {
         const igcData = parseIgcFile(pastedText);
         if (igcData) {
           event.preventDefault();
@@ -745,31 +744,32 @@ export function useStatusUpdateForm<
           const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
           await uploadNewIgc(igcFile);
           return;
+          // } IF PASTEDTEXT
         }
-      }
 
-      let plainTextPromise: Promise<string> | undefined;
-      for (let i = 0; i < items.length; i += 1) {
-        const item = items[i];
-        console.log(`Item ${i}: kind = ${item.kind}, type = ${item.type}`);
-        if (item.kind === 'string' && item.type === TEXT_PLAIN) {
-          plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
-          break;
+        let plainTextPromise: Promise<string> | undefined;
+        for (let i = 0; i < items.length; i += 1) {
+          const item = items[i];
+          console.log(`Item ${i}: kind = ${item.kind}, type = ${item.type}`);
+          if (item.kind === 'string' && item.type === TEXT_PLAIN) {
+            plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
+            break;
+          }
         }
-      }
 
-      const fileLikes = await dataTransferItemsToFiles(items);
-      if (fileLikes.length) {
-        console.log('Files found in clipboard:', fileLikes);
-        uploadNewFiles(fileLikes);
-        return;
-      }
+        const fileLikes = await dataTransferItemsToFiles(items);
+        if (fileLikes.length) {
+          console.log('Files found in clipboard:', fileLikes);
+          uploadNewFiles(fileLikes);
+          return;
+        }
 
-      // Fallback to regular text paste if it's not an IGC file or other file type
-      if (plainTextPromise) {
-        const s = await plainTextPromise;
-        console.log('Plain text promise resolved s:', s);
-        insertText(s);
+        // Fallback to regular text paste if it's not an IGC file or other file type
+        if (plainTextPromise) {
+          const s = await plainTextPromise;
+          console.log('Plain text promise resolved s:', s);
+          insertText(s);
+        } // IF not using PASTEDTEXT include this
       }
     },
     [uploadNewFiles, uploadNewIgc, insertText, parseIgcFile],

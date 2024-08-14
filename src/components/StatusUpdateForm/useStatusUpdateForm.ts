@@ -683,31 +683,31 @@ export function useStatusUpdateForm<
   const onPaste = useCallback(
     async (event: ClipboardEvent<HTMLTextAreaElement>) => {
       const TEXT_PLAIN = 'text/plain';
-      const { items } = event.clipboardData;
+      const { items, files } = event.clipboardData;
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
 
       console.log('event.clipboardData', event.clipboardData);
       console.log('types:', event.clipboardData.types);
-      console.log('files:', event.clipboardData.files);
-      console.log('items:::', event.clipboardData.items);
+      console.log('files:', files);
+      console.log('items:::', items);
       console.log('event.clipboardData JSON', JSON.stringify(event.clipboardData));
       console.log('window.clipboardData', window.clipboardData);
-      console.log('items', items);
       console.log('pastedText', pastedText);
       console.log('dataTransferItemsHaveFiles(items)', dataTransferItemsHaveFiles(items));
+
+      // Try accessing all clipboard data types
+      event.clipboardData.types.forEach((type) => {
+        console.log(`Type: ${type}`);
+        const data = event.clipboardData.getData(type);
+        console.log(`Data for type ${type}:`, data);
+      });
+
       setTimeout(() => {
         const delayedText = (event.clipboardData || window.clipboardData).getData('text');
         console.log('Delayed pastedText:', delayedText);
-
-        // Log the delayed check results
-        if (delayedText) {
-          console.log('Clipboard content after delay:', delayedText);
-        } else {
-          console.log('No clipboard content found after delay.');
-        }
       }, 100); // Delay by 100 milliseconds
 
-      // Check if the data has files or if the text is empty
+      // Handle the case where the clipboard data is not present immediately
       if (dataTransferItemsHaveFiles(items) || !pastedText) {
         // Attempt to handle as a file or fallback to custom text extraction
         for (let i = 0; i < items.length; i++) {

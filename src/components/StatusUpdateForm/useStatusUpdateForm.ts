@@ -682,13 +682,15 @@ export function useStatusUpdateForm<
 
   const onPaste = useCallback(
     async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+      const TEXT_PLAIN = 'text/plain';
       const { items } = event.clipboardData;
       const pastedText = (event.clipboardData || window.clipboardData).getData('text');
+
       console.log('event.clipboardData', event.clipboardData);
       console.log('items', items);
-
       console.log('pastedText', pastedText);
       console.log('dataTransferItemsHaveFiles(items)', dataTransferItemsHaveFiles(items));
+
       // Check if the data has files or if the text is empty
       if (dataTransferItemsHaveFiles(items) || !pastedText) {
         // Attempt to handle as a file or fallback to custom text extraction
@@ -699,9 +701,16 @@ export function useStatusUpdateForm<
             const file = item.getAsFile();
             if (file) {
               const textContent = await file.text();
-              // Process the extracted text
               console.log('Extracted text from file:', textContent);
-              // You can now handle this as a regular text paste
+              const igcData = parseIgcFile(textContent);
+              if (igcData) {
+                event.preventDefault();
+                const igcBlob = new Blob([textContent], { type: TEXT_PLAIN });
+                const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
+                await uploadNewIgc(igcFile);
+              } else {
+                insertText(textContent); // Handle as regular text
+              }
             }
           }
         }
@@ -710,15 +719,13 @@ export function useStatusUpdateForm<
 
       if (!dataTransferItemsHaveFiles(items)) {
         const igcData = parseIgcFile(pastedText);
-
         if (igcData) {
           event.preventDefault();
           // Get a promise for the plain text in case no files are
           // found. This needs to be done here because chrome cleans
           // up the DataTransferItems after resolving of a promise.
-          const igcBlob = new Blob([pastedText], { type: 'text/plain' });
-          const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: 'text/plain' });
-
+          const igcBlob = new Blob([pastedText], { type: TEXT_PLAIN });
+          const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
           await uploadNewIgc(igcFile);
           return;
         }
@@ -727,7 +734,7 @@ export function useStatusUpdateForm<
         for (let i = 0; i < items.length; i += 1) {
           const item = items[i];
           console.log(`Item ${i}: kind = ${item.kind}, type = ${item.type}`);
-          if (item.kind === 'string' && item.type === 'text/plain') {
+          if (item.kind === 'string' && item.type === TEXT_PLAIN) {
             plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
             break;
           }

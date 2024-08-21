@@ -12,6 +12,6 @@
 .raf-emoji-picker__container {
   position: absolute;
   z-index: $z9;
-  top: 0;
-  left: 40px;
+  left: -100px !important;
+  top: 30px !important;
 }

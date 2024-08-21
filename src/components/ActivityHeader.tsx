@@ -16,7 +16,7 @@ export const ActivityHeader = <UT extends DefaultUT = DefaultUT, AT extends Defa
   HeaderRight,
   icon,
   onClickUser,
-  style = { padding: '8px 16px' },
+  style,
   className,
 }: ActivityHeaderProps<UT, AT>) => {
   const { tDateTimeParser } = useTranslationContext();

@@ -230,7 +230,7 @@ export function StatusUpdateForm<
                 {t('Post')}
               </Button>
             </div>
-            <span className="upload-hint">Drag & drop, paste, or select a flight track .igc file</span>
+            <span className="upload-hint">Drag & drop, paste, or select a flight track (.igc) file</span>
           </PanelFooter>
         </ImageDropzone>
       </form>

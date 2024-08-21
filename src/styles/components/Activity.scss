@@ -1,20 +1,21 @@
 .raf-activity {
-  background-color: $white;
+  background-color: #333;
+  color: white;
   border-radius: 4px;
   margin: 8px 0;
 
   &__hashtag {
-    color: #095482;
+    color: var(--theme-color);
     cursor: pointer;
   }
 
   &__mention {
-    color: #095482;
+    color: var(--theme-color);
     cursor: pointer;
   }
 
   &__link {
-    color: $info;
+    color: var(--theme-color);
   }
 
   &__attachments {
@@ -42,7 +43,7 @@
   }
 
   &__file {
-    padding: 8px 16px;
+    // padding: 8px 16px;
     text-decoration: none;
 
     &:hover {

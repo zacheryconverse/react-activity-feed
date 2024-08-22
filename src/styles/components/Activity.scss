@@ -3,6 +3,7 @@
   color: white;
   border-radius: 4px;
   margin: 8px 0;
+  width: calc(100% + 32px);
 
   &__hashtag {
     color: var(--theme-color);
@@ -16,6 +17,11 @@
 
   &__link {
     color: var(--theme-color);
+    word-wrap: break-word;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   &__attachments {
@@ -67,8 +73,12 @@
   cursor: pointer;
   width: 30px;
   height: 30px;
+  position: absolute;
+  right: 18px;
+  border-radius: 50%;
+  display: inline;
 
   &:hover {
-    background-color: #333;
+    background-color: #555;
   }
 }

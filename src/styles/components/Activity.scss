@@ -62,14 +62,11 @@
   }
 }
 
-.expand-text {
+.expand-og-text {
   color: var(--theme-color);
   cursor: pointer;
   width: 30px;
   height: 30px;
-  position: absolute;
-  top: 170px;
-  right: 64px;
 
   &:hover {
     background-color: #333;

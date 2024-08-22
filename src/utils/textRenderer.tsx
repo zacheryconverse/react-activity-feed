@@ -165,7 +165,7 @@ export const textRenderer = (
     <>
       {renderedText}
       {shouldTruncate && (
-        <span onClick={() => setIsExpanded(!isExpanded)} className="expand-text">
+        <span onClick={() => setIsExpanded(!isExpanded)} className="expand-og-text">
           {isExpanded ? <Collapse /> : <Expand />}
         </span>
       )}

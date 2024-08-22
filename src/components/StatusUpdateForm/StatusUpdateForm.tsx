@@ -207,7 +207,7 @@ export function StatusUpdateForm<
           </PanelContent>
 
           <PanelFooter>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
+            <div style={{ display: 'flex' }}>
               <div style={{ flex: 1 }}>
                 <div style={{ marginRight: '32px', display: 'inline-block' }}>
                   <FileUploadButton handleFiles={state.uploadNewFiles} accepts=".icg,.IGC">

@@ -564,7 +564,7 @@ export function useStatusUpdateForm<
     uploadFile,
     uploadImage,
     uploadIgc,
-    // uploadNewIgc,
+    uploadNewIgc,
     removeFile,
     removeImage,
     removeIgc,

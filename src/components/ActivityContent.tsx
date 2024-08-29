@@ -8,7 +8,7 @@ import { textRenderer, smartRender, sanitizeURL } from '../utils';
 import { Audio } from './Audio';
 import { Video } from './Video';
 import { Card as DefaultCard } from './Card';
-import { Gallery } from './Gallery';
+// import { Gallery } from './Gallery';
 import { ActivityProps } from './Activity';
 
 export type ActivityContentProps<
@@ -36,9 +36,9 @@ export const ActivityContent = <
   const {
     object,
     text = (typeof object === 'string' ? object : '').trim(),
-    attachments: { og, images = [], files = [] } = {},
+    attachments: { og, files = [] } = {},
     verb,
-    image,
+    // image,
   } = activity;
 
   return (
@@ -55,7 +55,7 @@ export const ActivityContent = <
         </div>
       )}
 
-      {typeof image === 'string' && (
+      {/* {typeof image === 'string' && (
         <div style={{ padding: '8px 0' }}>
           <Gallery images={[image]} />
         </div>
@@ -65,7 +65,7 @@ export const ActivityContent = <
         <div style={{ padding: '8px 0' }}>
           <Gallery images={images} />
         </div>
-      )}
+      )} */}
 
       {!!files.length && (
         <ol className="raf-activity__attachments">

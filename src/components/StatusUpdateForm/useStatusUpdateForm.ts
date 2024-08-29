@@ -25,8 +25,8 @@ import { StatusUpdateFormProps } from './StatusUpdateForm';
 import { parseIgcFile, extractFlightStatistics, FlightStatistics } from './igcParser';
 import {
   generateRandomId,
-  dataTransferItemsToFiles,
-  // dataTransferItemsHaveFiles,
+  // dataTransferItemsToFiles,
+  dataTransferItemsHaveFiles,
   inputValueFromEvent,
 } from '../../utils';
 import { NetworkRequestTypes } from 'utils/errors';
@@ -681,59 +681,69 @@ export function useStatusUpdateForm<
   // }, []);
 
   const onPaste = useCallback(
-    async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    (event: ClipboardEvent<HTMLTextAreaElement>) => {
       const TEXT_PLAIN = 'text/plain';
       const { items } = event.clipboardData;
+      const pastedText = event.clipboardData.getData('text');
 
       console.log('Initial event.clipboardData:', event.clipboardData);
+      console.log('Initial types:', event.clipboardData.types);
+      console.log('Initial files:', event.clipboardData.files);
+      console.log('Initial items:', items);
+      console.log('Initial pastedText:', pastedText);
 
-      // Attempt to handle as a file or fallback to custom text extraction
-      if (items.length === 0 || !event.clipboardData.getData(TEXT_PLAIN)) {
-        // Delay the execution to give clipboard data some time to populate
-        setTimeout(async () => {
-          const delayedText = event.clipboardData.getData(TEXT_PLAIN);
-          console.log('Delayed clipboard data:', delayedText);
+      // Log the data types in the clipboard
+      event.clipboardData.types.forEach((type) => {
+        console.log(`Type detected: ${type}`);
+        const data = event.clipboardData.getData(type);
+        console.log(`Data for type ${type}:`, data);
+      });
 
-          if (delayedText) {
-            const igcData = parseIgcFile(delayedText);
-            if (igcData) {
-              event.preventDefault();
-              const igcBlob = new Blob([delayedText], { type: TEXT_PLAIN });
-              const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
-              await uploadNewIgc(igcFile);
-              return;
-            } else {
-              insertText(delayedText); // Handle as regular text
+      // Delay to allow clipboard data to populate (useful for iOS)
+      setTimeout(async () => {
+        const delayedText = event.clipboardData.getData('text');
+        console.log('Delayed pastedText after 100ms:', delayedText);
+
+        if (delayedText && !dataTransferItemsHaveFiles(items)) {
+          const igcData = parseIgcFile(delayedText);
+          if (igcData) {
+            event.preventDefault();
+            console.log('IGC content detected in delayed paste.');
+            const igcBlob = new Blob([delayedText], { type: TEXT_PLAIN });
+            const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
+            await uploadNewIgc(igcFile);
+          } else {
+            insertText(delayedText); // Fallback to regular text paste if not IGC
+          }
+        } else if (!delayedText && dataTransferItemsHaveFiles(items)) {
+          // Handle file-like clipboard data, e.g., read it as text
+          for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.kind === 'file') {
+              const file = item.getAsFile();
+              if (file) {
+                const textContent = await file.text();
+                console.log('Extracted text from file:', textContent);
+                const igcData = parseIgcFile(textContent);
+                if (igcData) {
+                  event.preventDefault();
+                  const igcBlob = new Blob([textContent], { type: TEXT_PLAIN });
+                  const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
+                  await uploadNewIgc(igcFile);
+                } else {
+                  insertText(textContent); // Fallback to regular text paste if not IGC
+                }
+              }
             }
           }
-        }, 100); // Delay by 100 milliseconds
-
-        return;
-      }
-
-      // Check if any file-like items are present
-      const fileLikes = await dataTransferItemsToFiles(items);
-      if (fileLikes.length) {
-        event.preventDefault();
-        await uploadNewFiles(fileLikes);
-        return;
-      }
-
-      const pastedText = event.clipboardData.getData(TEXT_PLAIN);
-      if (pastedText) {
-        const igcData = parseIgcFile(pastedText);
-        if (igcData) {
-          event.preventDefault();
-          const igcBlob = new Blob([pastedText], { type: TEXT_PLAIN });
-          const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
-          await uploadNewIgc(igcFile);
-          return;
-        } else {
-          insertText(pastedText); // Handle as regular text
         }
+      }, 100); // Delay by 100 milliseconds
+
+      if (!pastedText && !dataTransferItemsHaveFiles(items)) {
+        console.warn('No clipboard data detected immediately or after delay.');
       }
     },
-    [uploadNewIgc, uploadNewFiles, insertText, parseIgcFile],
+    [uploadNewFiles, uploadNewIgc, insertText, parseIgcFile],
   );
 
   return {

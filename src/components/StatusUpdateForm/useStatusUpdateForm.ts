@@ -25,8 +25,8 @@ import { StatusUpdateFormProps } from './StatusUpdateForm';
 import { parseIgcFile, extractFlightStatistics, FlightStatistics } from './igcParser';
 import {
   generateRandomId,
-  dataTransferItemsToFiles,
-  dataTransferItemsHaveFiles,
+  // dataTransferItemsToFiles,
+  // dataTransferItemsHaveFiles,
   inputValueFromEvent,
 } from '../../utils';
 import { NetworkRequestTypes } from 'utils/errors';
@@ -776,108 +776,41 @@ export function useStatusUpdateForm<
   // );
 
   const onPaste = useCallback(
-    // eslint-disable-next-line sonarjs/cognitive-complexity
     async (event: ClipboardEvent<HTMLTextAreaElement>) => {
-      const TEXT_PLAIN = 'text/plain';
-      const { items } = event.clipboardData;
-      let pastedText = (event.clipboardData || window.clipboardData).getData('text');
+      // Check if Clipboard API is supported
+      if (!navigator.clipboard) {
+        console.warn('Clipboard API not supported');
+        return;
+      }
 
-      event.clipboardData.types.forEach((type) => {
-        console.log(`Type: ${type}`);
-        const data = event.clipboardData.getData(type);
-        console.log(`Data for type ${type}:`, data);
-      });
+      // Prevent the default paste behavior
+      event.preventDefault();
 
-      if (!pastedText) {
-        const hiddenTextArea = document.createElement('textarea');
-        hiddenTextArea.style.position = 'fixed';
-        hiddenTextArea.style.top = '-9999px';
-        document.body.appendChild(hiddenTextArea);
+      try {
+        // Read text from the clipboard using the Clipboard API
+        const pastedText = await navigator.clipboard.readText();
 
-        hiddenTextArea.focus();
+        console.log('Pasted text:', pastedText);
 
-        setTimeout(() => {
-          pastedText = hiddenTextArea.value;
-          document.body.removeChild(hiddenTextArea);
-          console.log('Delayed pastedText after 100ms:', pastedText);
-
-          if (pastedText) {
-            console.log('Detected pasted text:', pastedText);
-            const igcData = parseIgcFile(pastedText);
-            if (igcData) {
-              event.preventDefault();
-              const igcBlob = new Blob([pastedText], { type: TEXT_PLAIN });
-              const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
-              uploadNewIgc(igcFile);
-            } else {
-              insertText(pastedText); // Handle as regular text
-            }
+        if (pastedText) {
+          const igcData = parseIgcFile(pastedText);
+          if (igcData) {
+            // Handle the IGC data
+            const igcBlob = new Blob([pastedText], { type: 'text/plain' });
+            const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: 'text/plain' });
+            await uploadNewIgc(igcFile);
           } else {
-            console.warn('No clipboard data detected.');
+            // Handle as regular text
+            insertText(pastedText);
           }
-        }, 100); // Delay to allow clipboard data to populate
-
-        return;
-      }
-
-      if (dataTransferItemsHaveFiles(items) || !pastedText) {
-        for (let i = 0; i < items.length; i++) {
-          const item = items[i];
-          if (item.kind === 'file' && item.type === '') {
-            const file = item.getAsFile();
-            if (file) {
-              const textContent = await file.text();
-              console.log('Extracted text from file:', textContent);
-              const igcData = parseIgcFile(textContent);
-              if (igcData) {
-                event.preventDefault();
-                const igcBlob = new Blob([textContent], { type: TEXT_PLAIN });
-                const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
-                await uploadNewIgc(igcFile);
-              } else {
-                insertText(textContent); // Handle as regular text
-              }
-            }
-          }
+        } else {
+          console.warn('No text detected in clipboard');
         }
-        return;
-      }
-
-      if (!dataTransferItemsHaveFiles(items)) {
-        const igcData = parseIgcFile(pastedText);
-        if (igcData) {
-          event.preventDefault();
-          const igcBlob = new Blob([pastedText], { type: TEXT_PLAIN });
-          const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: TEXT_PLAIN });
-          await uploadNewIgc(igcFile);
-          return;
-        }
-
-        let plainTextPromise: Promise<string> | undefined;
-        for (let i = 0; i < items.length; i += 1) {
-          const item = items[i];
-          console.log(`Item ${i}: kind = ${item.kind}, type = ${item.type}`);
-          if (item.kind === 'string' && item.type === TEXT_PLAIN) {
-            plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
-            break;
-          }
-        }
-
-        const fileLikes = await dataTransferItemsToFiles(items);
-        if (fileLikes.length) {
-          console.log('Files found in clipboard:', fileLikes);
-          uploadNewFiles(fileLikes);
-          return;
-        }
-
-        if (plainTextPromise) {
-          const s = await plainTextPromise;
-          console.log('Plain text promise resolved s:', s);
-          insertText(s);
-        }
+      } catch (err) {
+        console.error('Failed to read clipboard contents:', err);
       }
     },
-    [uploadNewFiles, uploadNewIgc, insertText, parseIgcFile],
+    [uploadNewIgc, insertText, parseIgcFile],
   );
 
   return {

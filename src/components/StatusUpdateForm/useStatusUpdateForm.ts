@@ -25,8 +25,8 @@ import { StatusUpdateFormProps } from './StatusUpdateForm';
 import { parseIgcFile, extractFlightStatistics, FlightStatistics } from './igcParser';
 import {
   generateRandomId,
-  // dataTransferItemsToFiles,
-  // dataTransferItemsHaveFiles,
+  dataTransferItemsToFiles,
+  dataTransferItemsHaveFiles,
   inputValueFromEvent,
 } from '../../utils';
 import { NetworkRequestTypes } from 'utils/errors';
@@ -564,7 +564,7 @@ export function useStatusUpdateForm<
     uploadFile,
     uploadImage,
     uploadIgc,
-    uploadNewIgc,
+    // uploadNewIgc,
     removeFile,
     removeImage,
     removeIgc,
@@ -651,34 +651,34 @@ export function useStatusUpdateForm<
     handleOgDebounced(text);
   }, []);
 
-  // const onPaste = useCallback(async (event: ClipboardEvent<HTMLTextAreaElement>) => {
-  //   const { items } = event.clipboardData;
-  //   if (!dataTransferItemsHaveFiles(items)) return;
+  const onPaste = useCallback(async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+    const { items } = event.clipboardData;
+    if (!dataTransferItemsHaveFiles(items)) return;
 
-  //   event.preventDefault();
-  //   // Get a promise for the plain text in case no files are
-  //   // found. This needs to be done here because chrome cleans
-  //   // up the DataTransferItems after resolving of a promise.
-  //   let plainTextPromise: Promise<string> | undefined;
-  //   for (let i = 0; i < items.length; i += 1) {
-  //     const item = items[i];
-  //     if (item.kind === 'string' && item.type === 'text/plain') {
-  //       plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
-  //       break;
-  //     }
-  //   }
+    event.preventDefault();
+    // Get a promise for the plain text in case no files are
+    // found. This needs to be done here because chrome cleans
+    // up the DataTransferItems after resolving of a promise.
+    let plainTextPromise: Promise<string> | undefined;
+    for (let i = 0; i < items.length; i += 1) {
+      const item = items[i];
+      if (item.kind === 'string' && item.type === 'text/plain') {
+        plainTextPromise = new Promise((resolve) => item.getAsString(resolve));
+        break;
+      }
+    }
 
-  //   const fileLikes = await dataTransferItemsToFiles(items);
-  //   if (fileLikes.length) {
-  //     uploadNewFiles(fileLikes);
-  //     return;
-  //   }
-  //   // fallback to regular text paste
-  //   if (plainTextPromise) {
-  //     const s = await plainTextPromise;
-  //     insertText(s);
-  //   }
-  // }, []);
+    const fileLikes = await dataTransferItemsToFiles(items);
+    if (fileLikes.length) {
+      uploadNewFiles(fileLikes);
+      return;
+    }
+    // fallback to regular text paste
+    if (plainTextPromise) {
+      const s = await plainTextPromise;
+      insertText(s);
+    }
+  }, []);
 
   // const onPaste = useCallback(
   //   async (event: ClipboardEvent<HTMLTextAreaElement>) => {
@@ -775,43 +775,43 @@ export function useStatusUpdateForm<
   //   [uploadNewFiles, uploadNewIgc, insertText, parseIgcFile],
   // );
 
-  const onPaste = useCallback(
-    async (event: ClipboardEvent<HTMLTextAreaElement>) => {
-      // Check if Clipboard API is supported
-      if (!navigator.clipboard) {
-        console.warn('Clipboard API not supported');
-        return;
-      }
+  // const onPaste = useCallback(
+  //   async (event: ClipboardEvent<HTMLTextAreaElement>) => {
+  //     // Check if Clipboard API is supported
+  //     if (!navigator.clipboard) {
+  //       console.warn('Clipboard API not supported');
+  //       return;
+  //     }
 
-      // Prevent the default paste behavior
-      event.preventDefault();
+  //     // Prevent the default paste behavior
+  //     event.preventDefault();
 
-      try {
-        // Read text from the clipboard using the Clipboard API
-        const pastedText = await navigator.clipboard.readText();
+  //     try {
+  //       // Read text from the clipboard using the Clipboard API
+  //       const pastedText = await navigator.clipboard.readText();
 
-        console.log('Pasted text:', pastedText);
+  //       console.log('Pasted text:', pastedText);
 
-        if (pastedText) {
-          const igcData = parseIgcFile(pastedText);
-          if (igcData) {
-            // Handle the IGC data
-            const igcBlob = new Blob([pastedText], { type: 'text/plain' });
-            const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: 'text/plain' });
-            await uploadNewIgc(igcFile);
-          } else {
-            // Handle as regular text
-            insertText(pastedText);
-          }
-        } else {
-          console.warn('No text detected in clipboard');
-        }
-      } catch (err) {
-        console.error('Failed to read clipboard contents:', err);
-      }
-    },
-    [uploadNewIgc, insertText, parseIgcFile],
-  );
+  //       if (pastedText) {
+  //         const igcData = parseIgcFile(pastedText);
+  //         if (igcData) {
+  //           // Handle the IGC data
+  //           const igcBlob = new Blob([pastedText], { type: 'text/plain' });
+  //           const igcFile = new File([igcBlob], 'pasted-flight.igc', { type: 'text/plain' });
+  //           await uploadNewIgc(igcFile);
+  //         } else {
+  //           // Handle as regular text
+  //           insertText(pastedText);
+  //         }
+  //       } else {
+  //         console.warn('No text detected in clipboard');
+  //       }
+  //     } catch (err) {
+  //       console.error('Failed to read clipboard contents:', err);
+  //     }
+  //   },
+  //   [uploadNewIgc, insertText, parseIgcFile],
+  // );
 
   return {
     userData,

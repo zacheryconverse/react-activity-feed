@@ -225,6 +225,8 @@ export class FeedManager<
       options.userId = this.props.client.userId;
     }
 
+    console.log('Adding reaction:', { kind, activity, data, options });
+
     let reaction: ReactionAPIResponse<RT>;
     try {
       if (this.props.doReactionAddRequest) {
@@ -232,7 +234,9 @@ export class FeedManager<
       } else {
         reaction = await this.props.client.reactions.add(kind, activity, data, options);
       }
+      console.log('Reaction added successfully:', reaction);
     } catch (e) {
+      console.error('Error in onAddReaction:', e);
       this.props.errorHandler(e, 'add-reaction', {
         kind,
         activity,
@@ -243,13 +247,26 @@ export class FeedManager<
     }
 
     this.trackAnalytics(kind, activity, options.trackAnalytics);
+
     const enrichedReaction = immutable.fromJS({ ...reaction, user: this.props.user?.full });
+
+    console.log('Enriched reaction:', enrichedReaction);
 
     this.setState((prevState) => {
       let { activities } = prevState;
+      console.log('Previous state activities:', activities);
+
       const { reactionIdToPaths } = prevState;
+
       for (const path of this.getActivityPaths(activity)) {
         this.removeFoundReactionIdPaths(activities.getIn(path).toJS(), reactionIdToPaths, path);
+        // Where reaction counts are being updated
+        console.log(
+          'Updating reaction counts:',
+          kind,
+          'Previous count:',
+          activities.getIn([...path, 'reaction_counts', kind]),
+        );
 
         activities = activities
           .updateIn([...path, 'reaction_counts', kind], (v = 0) => v + 1)
@@ -258,6 +275,8 @@ export class FeedManager<
 
         this.addFoundReactionIdPaths(activities.getIn(path).toJS(), reactionIdToPaths, path);
       }
+
+      console.log('Updated activities with new reaction:', activities);
 
       return { activities, reactionIdToPaths };
     });

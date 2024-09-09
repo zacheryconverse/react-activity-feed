@@ -252,6 +252,8 @@ export class FeedManager<
     console.log('Enriched reaction:', enrichedReaction);
 
     this.setState((prevState) => {
+      console.log('Before update, activityIdToPaths:', prevState.activityIdToPaths);
+
       let { activities } = prevState;
       const { reactionIdToPaths } = prevState;
 
@@ -263,7 +265,9 @@ export class FeedManager<
         console.log('Processing path:', path);
 
         const activityAtPath = activities.getIn(path);
-
+        console.log('Activity at path:', activityAtPath);
+        console.log('Activity at path toJS():', activityAtPath?.toJS());
+        console.log('reactionIdToPaths:', reactionIdToPaths);
         // Log if activity exists at this path or if it's undefined
         if (!activityAtPath) {
           console.error(`Activity not found at path: ${path}. Activities size: ${activities.size}`);
@@ -273,20 +277,23 @@ export class FeedManager<
 
         // Log the current state before calling toJS()
         console.log('Activity before toJS():', activityAtPath);
+        console.log('id:', activity.id, activityAtPath.get('id'), activity);
 
-        // This is where the error could be happening
+        // Try logging inside removeFoundReactionIdPaths and handle errors
         try {
+          console.log(`Removing reaction paths for activity at path: ${path}`);
           this.removeFoundReactionIdPaths(activityAtPath?.toJS(), reactionIdToPaths, path);
         } catch (error) {
           console.error('Error in removeFoundReactionIdPaths:', error);
         }
 
         // Log the reaction counts before updating
+        const currentReactionCount = activities.getIn([...path, 'reaction_counts', kind]);
         console.log(
           'Updating reaction counts for kind:',
           kind,
           'Current reaction count:',
-          activities.getIn([...path, 'reaction_counts', kind]),
+          currentReactionCount !== undefined ? currentReactionCount : 'Undefined',
         );
 
         activities = activities
@@ -294,18 +301,19 @@ export class FeedManager<
           .updateIn([...path, 'own_reactions', kind], (v = immutable.List()) => v.unshift(enrichedReaction))
           .updateIn([...path, 'latest_reactions', kind], (v = immutable.List()) => v.unshift(enrichedReaction));
 
-        console.log('Updated activities:', activities);
+        console.log('Updated activities after updating reaction counts:', activities);
 
-        // Log the reaction paths before and after adding
+        // Log before and after adding reaction paths
         try {
-          console.log('Adding reaction paths');
+          console.log('Adding reaction paths for activity:', path);
           this.addFoundReactionIdPaths(activities.getIn(path).toJS(), reactionIdToPaths, path);
+          console.log('Reaction paths added successfully');
         } catch (error) {
           console.error('Error in addFoundReactionIdPaths:', error);
         }
       }
 
-      console.log('Final updated state:', activities);
+      console.log('Final updated activities state:', activities);
       return { activities, reactionIdToPaths };
     });
   };

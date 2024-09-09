@@ -208,6 +208,7 @@ export class FeedManager<
   getActivityPaths = (activity: Activity | string) => {
     const activityId = typeof activity === 'string' ? activity : activity.id;
     return this.state.activityIdToPaths[activityId];
+    // possible fallback:  return this.state.activityIdToPaths[activityId] || [[activityId, "latest_reactions", "comment", 0]];
   };
 
   getReactionPaths = (reaction: Reaction | string) => {
@@ -225,8 +226,6 @@ export class FeedManager<
       options.userId = this.props.client.userId;
     }
 
-    console.log('Adding reaction:', { kind, activity, data, options });
-
     let reaction: ReactionAPIResponse<RT>;
     try {
       if (this.props.doReactionAddRequest) {
@@ -234,7 +233,6 @@ export class FeedManager<
       } else {
         reaction = await this.props.client.reactions.add(kind, activity, data, options);
       }
-      console.log('Reaction added successfully:', reaction);
     } catch (e) {
       console.error('Error in onAddReaction:', e);
       this.props.errorHandler(e, 'add-reaction', {
@@ -249,70 +247,35 @@ export class FeedManager<
     this.trackAnalytics(kind, activity, options.trackAnalytics);
 
     const enrichedReaction = immutable.fromJS({ ...reaction, user: this.props.user?.full });
-    console.log('Enriched reaction:', enrichedReaction);
 
     this.setState((prevState) => {
-      console.log('Before update, activityIdToPaths:', prevState.activityIdToPaths);
-
       let { activities } = prevState;
       const { reactionIdToPaths } = prevState;
 
-      // Log the activity paths being processed
+      // this fallback is because I have yet to determine why activityPaths is undefined when commenting on someone else's post
       const activityPaths = this.getActivityPaths(activity) || [];
-      console.log('Current state of activityIdToPaths:', this.state.activityIdToPaths);
-
-      console.log('Activity paths:', activityPaths);
-      console.log('reactionIdToPaths:', reactionIdToPaths);
-      // Log the current state before calling toJS()
 
       for (const path of activityPaths) {
-        console.log('Processing path:', path);
-        console.log('Activity at path:', activityAtPath);
-        console.log('Activity at path toJS():', activityAtPath?.toJS());
-
         const activityAtPath = activities.getIn(path);
-        // Log if activity exists at this path or if it's undefined
-        if (!activityAtPath) {
-          console.error(`Activity not found at path: ${path}. Activities size: ${activities.size}`);
-        } else {
-          console.log('Activity found at path:', activityAtPath);
-        }
 
-        // Try logging inside removeFoundReactionIdPaths and handle errors
         try {
-          console.log(`Removing reaction paths for activity at path: ${path}`);
           this.removeFoundReactionIdPaths(activityAtPath?.toJS(), reactionIdToPaths, path);
         } catch (error) {
           console.error('Error in removeFoundReactionIdPaths:', error);
         }
-
-        // Log the reaction counts before updating
-        const currentReactionCount = activities.getIn([...path, 'reaction_counts', kind]);
-        console.log(
-          'Updating reaction counts for kind:',
-          kind,
-          'Current reaction count:',
-          currentReactionCount !== undefined ? currentReactionCount : 'Undefined',
-        );
 
         activities = activities
           .updateIn([...path, 'reaction_counts', kind], (v = 0) => v + 1)
           .updateIn([...path, 'own_reactions', kind], (v = immutable.List()) => v.unshift(enrichedReaction))
           .updateIn([...path, 'latest_reactions', kind], (v = immutable.List()) => v.unshift(enrichedReaction));
 
-        console.log('Updated activities after updating reaction counts:', activities);
-
-        // Log before and after adding reaction paths
         try {
-          console.log('Adding reaction paths for activity:', path);
           this.addFoundReactionIdPaths(activities.getIn(path).toJS(), reactionIdToPaths, path);
-          console.log('Reaction paths added successfully');
         } catch (error) {
           console.error('Error in addFoundReactionIdPaths:', error);
         }
       }
 
-      console.log('Final updated activities state:', activities);
       return { activities, reactionIdToPaths };
     });
   };

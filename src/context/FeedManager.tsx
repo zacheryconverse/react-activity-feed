@@ -267,8 +267,6 @@ export class FeedManager<
 
       for (const path of activityPaths) {
         console.log('Processing path:', path);
-        console.log('Activity before toJS():', activityAtPath);
-        console.log('id:', activity.id, activityAtPath.get('id'), activity);
         console.log('Activity at path:', activityAtPath);
         console.log('Activity at path toJS():', activityAtPath?.toJS());
 

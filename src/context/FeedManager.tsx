@@ -259,6 +259,8 @@ export class FeedManager<
 
       // Log the activity paths being processed
       const activityPaths = this.getActivityPaths(activity);
+      console.log('Current state of activityIdToPaths:', this.state.activityIdToPaths);
+
       console.log('Activity paths:', activityPaths);
       console.log('Activity at path:', activityAtPath);
       console.log('Activity at path toJS():', activityAtPath?.toJS());
@@ -695,6 +697,7 @@ export class FeedManager<
   ) => {
     const map = previous;
     const currentPath: Array<string | number> = [];
+
     function addFoundActivities(obj: ResponseResult | ResponseResult[]) {
       if (Array.isArray(obj)) {
         obj.forEach((v, i) => {
@@ -703,16 +706,16 @@ export class FeedManager<
           currentPath.pop();
         });
       } else if (_isPlainObject(obj)) {
-        // @ts-expect-error
+        // Check if this object has an ID and is an activity
         if (obj.id && obj.actor && obj.verb && obj.object) {
           if (!map[obj.id]) {
             map[obj.id] = [];
           }
           map[obj.id].push([...currentPath]);
+          console.log(`Added path for activity ID: ${obj.id}, Path: ${currentPath}`);
         }
         for (const k in obj) {
           currentPath.push(k);
-          // @ts-expect-error
           addFoundActivities(obj[k]);
           currentPath.pop();
         }
@@ -724,6 +727,7 @@ export class FeedManager<
       addFoundActivities(a);
       currentPath.pop();
     }
+    console.log('Activity ID to Paths Map:', map); // Add this log to check the final map
     return map;
   };
 

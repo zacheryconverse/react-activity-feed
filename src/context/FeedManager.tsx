@@ -667,13 +667,11 @@ export class FeedManager<
           currentPath.pop();
         });
       } else if (_isPlainObject(obj)) {
-        // Check if this object has an ID and is an activity
         if (obj.id && obj.actor && obj.verb && obj.object) {
           if (!map[obj.id]) {
             map[obj.id] = [];
           }
           map[obj.id].push([...currentPath]);
-          console.log(`Added path for activity ID: ${obj.id}, Path: ${currentPath}`);
         }
         for (const k in obj) {
           currentPath.push(k);
@@ -688,7 +686,6 @@ export class FeedManager<
       addFoundActivities(a);
       currentPath.pop();
     }
-    console.log('Activity ID to Paths Map:', map); // Add this log to check the final map
     return map;
   };
 

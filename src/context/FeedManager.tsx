@@ -260,24 +260,23 @@ export class FeedManager<
       // Log the activity paths being processed
       const activityPaths = this.getActivityPaths(activity);
       console.log('Activity paths:', activityPaths);
+      console.log('Activity at path:', activityAtPath);
+      console.log('Activity at path toJS():', activityAtPath?.toJS());
+      console.log('reactionIdToPaths:', reactionIdToPaths);
+      // Log the current state before calling toJS()
+      console.log('Activity before toJS():', activityAtPath);
+      console.log('id:', activity.id, activityAtPath.get('id'), activity);
 
       for (const path of activityPaths) {
         console.log('Processing path:', path);
 
         const activityAtPath = activities.getIn(path);
-        console.log('Activity at path:', activityAtPath);
-        console.log('Activity at path toJS():', activityAtPath?.toJS());
-        console.log('reactionIdToPaths:', reactionIdToPaths);
         // Log if activity exists at this path or if it's undefined
         if (!activityAtPath) {
           console.error(`Activity not found at path: ${path}. Activities size: ${activities.size}`);
         } else {
           console.log('Activity found at path:', activityAtPath);
         }
-
-        // Log the current state before calling toJS()
-        console.log('Activity before toJS():', activityAtPath);
-        console.log('id:', activity.id, activityAtPath.get('id'), activity);
 
         // Try logging inside removeFoundReactionIdPaths and handle errors
         try {

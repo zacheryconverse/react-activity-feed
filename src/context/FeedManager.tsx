@@ -262,15 +262,15 @@ export class FeedManager<
       console.log('Current state of activityIdToPaths:', this.state.activityIdToPaths);
 
       console.log('Activity paths:', activityPaths);
-      console.log('Activity at path:', activityAtPath);
-      console.log('Activity at path toJS():', activityAtPath?.toJS());
       console.log('reactionIdToPaths:', reactionIdToPaths);
       // Log the current state before calling toJS()
-      console.log('Activity before toJS():', activityAtPath);
-      console.log('id:', activity.id, activityAtPath.get('id'), activity);
 
       for (const path of activityPaths) {
         console.log('Processing path:', path);
+        console.log('Activity before toJS():', activityAtPath);
+        console.log('id:', activity.id, activityAtPath.get('id'), activity);
+        console.log('Activity at path:', activityAtPath);
+        console.log('Activity at path toJS():', activityAtPath?.toJS());
 
         const activityAtPath = activities.getIn(path);
         // Log if activity exists at this path or if it's undefined

@@ -258,7 +258,7 @@ export class FeedManager<
       const { reactionIdToPaths } = prevState;
 
       // Log the activity paths being processed
-      const activityPaths = this.getActivityPaths(activity) || [activity.id];
+      const activityPaths = this.getActivityPaths(activity) || [];
       console.log('Current state of activityIdToPaths:', this.state.activityIdToPaths);
 
       console.log('Activity paths:', activityPaths);

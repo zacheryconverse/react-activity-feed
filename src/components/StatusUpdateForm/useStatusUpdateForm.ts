@@ -291,10 +291,10 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         }
 
         const result = solver(igcData, scoringRules.XContest).next().value;
-        console.log('result', result);
+        // console.log('result', result);
         const flightStats = extractFlightStatistics(result);
         const url = await client.files.upload(file);
-        console.log('Flight Statistics:', flightStats);
+        // console.log('Flight Statistics:', flightStats);
 
         setIgcs((prevState) => {
           prevState.data[id] = {
@@ -635,6 +635,7 @@ export function useStatusUpdateForm<
     e.preventDefault();
     try {
       setSubmitting(true);
+      console.log('Submitting text:', text);
       const response = await addActivity();
       resetState();
       if (onSuccess) onSuccess(response);

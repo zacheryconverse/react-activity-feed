@@ -635,7 +635,7 @@ export function useStatusUpdateForm<
     e.preventDefault();
     try {
       setSubmitting(true);
-      console.log('Submitting text:', text);
+      // console.log('Submitting text:', text);
       const response = await addActivity();
       resetState();
       if (onSuccess) onSuccess(response);

@@ -1,5 +1,7 @@
 // @ts-nocheck
 import { parse } from 'igc-parser';
+import * as turf from '@turf/turf';
+import countryReverseGeocoding from 'country-reverse-geocoding';
 
 export interface Fix {
   gpsAltitude: number;
@@ -19,7 +21,6 @@ export interface FlightData {
 }
 
 export const parseIgcFile = (igcFileContent: string): FlightData | null => {
-  // console.log('igcFileContent:', igcFileContent);
   try {
     return parse(igcFileContent) as unknown as FlightData;
   } catch (error) {
@@ -44,6 +45,7 @@ export interface FlightStatistics {
   maxSpeed: number;
   pilot: string;
   points: Point[];
+  regions: string[];
   routeDistance: number;
   routeDuration: string;
   routeLegDetails: LegDetail[];
@@ -65,39 +67,39 @@ interface LegDetail {
   percentOfRoute: string;
 }
 
-interface ScoreInfo {
-  distance: number;
-  legs: Leg[];
-  score: number;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  tp: any[];
-  cp?: {
-    in: { r: number };
-    out: { r: number };
-  };
-  ep?: {
-    finish: { r: number };
-    start: { r: number };
-  };
-}
+// Define regions using GeoJSON polygons
+const regions = [
+  {
+    name: 'mexico',
+    polygon: turf.polygon([
+      [
+        [-117.0, 14.5],
+        [-117.0, 29.5],
+        [-86.5, 29.5],
+        [-86.5, 14.5],
+        [-117.0, 14.5],
+      ],
+    ]),
+  },
+  {
+    name: 'alps',
+    polygon: turf.polygon([
+      [
+        [5.0, 44.0],
+        [10.5, 44.0],
+        [10.5, 48.5],
+        [5.0, 48.5],
+        [5.0, 44.0],
+      ],
+    ]),
+  },
+  // Add more regions as needed
+];
 
-interface Result {
-  opt: {
-    flight: FlightData;
-    scoring: {
-      name: string;
-    };
-  };
-  scoreInfo: ScoreInfo;
-}
-
-interface Leg {
-  d: number;
-  finish: {
-    latitude: number;
-    longitude: number;
-  };
-}
+const isPointInRegion = (latitude: number, longitude: number, region: string) => {
+  const point = turf.point([longitude, latitude]);
+  return turf.booleanPointInPolygon(point, region.polygon);
+};
 
 const formatDuration = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
@@ -327,6 +329,28 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     time: fixes[fixes.length - 1].time,
   });
 
+  const regionsForFlight = new Set<string>();
+  // Initialize the country reverse geocoding
+  const crg = countryReverseGeocoding({});
+
+  const wasInMexico = flightData.fixes.some((fix) => {
+    const country = crg.getCountry(fix.latitude, fix.longitude);
+    console.log('Country:', country);
+    return country && country.name.toLowerCase() === 'mexico';
+  });
+
+  if (wasInMexico) {
+    regionsForFlight.add('mexico');
+  }
+
+  points.forEach((point) => {
+    regions.forEach((region) => {
+      if (isPointInRegion(point.latitude, point.longitude, region)) {
+        regionsForFlight.add(region.name);
+      }
+    });
+  });
+
   let totalPointsDistance = 0;
   for (let i = 0; i < points.length - 1; i++) {
     totalPointsDistance += haversineDistance(
@@ -364,6 +388,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     maxAltitude,
     maxAltitudeGain,
     gliderType,
-    totalDistance: parseFloat(totalDistance.toFixed(2)),
+    totalDistance,
+    regions: Array.from(regionsForFlight),
   };
 };

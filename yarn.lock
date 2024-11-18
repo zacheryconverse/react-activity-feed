@@ -3758,6 +3758,11 @@ async-retry-ng@^2.0.1:
   resolved "https://registry.yarnpkg.com/async-retry-ng/-/async-retry-ng-2.0.1.tgz#f5285ec1c52654a2ba6a505d0c18b1eadfaebd41"
   integrity sha512-iitlc2murdQ3/A5Re3CcplQBEf7vOmFrFQ6RFn3+/+zZUyIHYkZnnEziMSa6YIb2Bs2EJEPZWReTxjHqvQbDbw==
 
+async@0.2.x:
+  version "0.2.10"
+  resolved "https://registry.npmjs.org/async/-/async-0.2.10.tgz#b6bbe0b0674b9d719708ca38de8c237cb526c3d1"
+  integrity sha512-eAkdoKxU6/LkKDBzLpT+t6Ff5EtfSF4wx1WfJiPEEV7WNLnDaRXk0oVysiEPm262roaachGexwUv94WhSgN5TQ==
+
 async@1.5.2:
   version "1.5.2"
   resolved "https://registry.yarnpkg.com/async/-/async-1.5.2.tgz#ec6a61ae56480c0c3cb241c95618e20892f9672a"
@@ -5568,6 +5573,13 @@ cosmiconfig@^7.0.0, cosmiconfig@^7.0.1:
     parse-json "^5.0.0"
     path-type "^4.0.0"
     yaml "^1.10.0"
+
+country-reverse-geocoding@^0.2.2:
+  version "0.2.2"
+  resolved "https://registry.npmjs.org/country-reverse-geocoding/-/country-reverse-geocoding-0.2.2.tgz#d22b0f45be3ddc6ab58338601fe2241ce9c34cf7"
+  integrity sha512-YnEPcMrvpw/3VLQgyaRwklJdjt7kal/UAXMVug4eOFrFmjcPPlTOBfbF04/pAQ1J+sAAHaVilZyiCqeiR4jkYw==
+  dependencies:
+    fwk "1.0.x"
 
 create-ecdh@^4.0.0:
   version "4.0.4"
@@ -8554,6 +8566,14 @@ functions-have-names@^1.2.3:
   version "1.2.3"
   resolved "https://registry.yarnpkg.com/functions-have-names/-/functions-have-names-1.2.3.tgz#0404fe4ee2ba2f607f0e0ec3c80bae994133b834"
   integrity sha512-xckBUXyTIqT97tq2x2AMb+g163b5JFysYk0x4qxNFwbfQkmNZoiRHb6sPzI9/QV33WeuvVYBUIiD4NzNIyqaRQ==
+
+fwk@1.0.x:
+  version "1.0.11"
+  resolved "https://registry.npmjs.org/fwk/-/fwk-1.0.11.tgz#098c8f7172ec25134ec86a1473affa364d404347"
+  integrity sha512-qpizJ3Qt9AV2vKWhiPmN7Hf1raqy16nJ2rdiB3atzMXbXrjE7TjtuS0xhU0fvCzm+DtNKHobuY+/6ZXMCLUPGQ==
+  dependencies:
+    async "0.2.x"
+    should "0.6.x"
 
 gatsby-cli@^2.19.3:
   version "2.19.3"
@@ -17201,6 +17221,11 @@ shellwords@^0.1.1:
   version "0.1.1"
   resolved "https://registry.yarnpkg.com/shellwords/-/shellwords-0.1.1.tgz#d6b9181c1a48d397324c84871efbcfc73fc0654b"
   integrity sha512-vFwSUfQvqybiICwZY5+DAWIPLKsWO31Q91JSKl3UYv+K5c2QRPzn0qzec6QPu1Qc9eHYItiP3NdJqNVqetYAww==
+
+should@0.6.x:
+  version "0.6.3"
+  resolved "https://registry.npmjs.org/should/-/should-0.6.3.tgz#d4b55335c8908f3a6c47970b687f750372acdc73"
+  integrity sha512-i49657m5zvqhPxx5D0RCyIS+UaeEg2EOxCl1aLWFpvxU4msO86UTq7w3zKNJEooweuGgfp7+h8fuqEJhRQMIug==
 
 side-channel@^1.0.4, side-channel@^1.0.6:
   version "1.0.6"

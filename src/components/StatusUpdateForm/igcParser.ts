@@ -333,7 +333,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   // Initialize the country reverse geocoding
   const crg = country_reverse_geocoding();
 
-  const wasInMexico = flightData.points.some((point) => {
+  const wasInMexico = points.some((point) => {
     const country = crg.get_country(point.latitude, point.longitude);
     console.log('Country:', country);
     return country && country.name.toLowerCase() === 'mexico';

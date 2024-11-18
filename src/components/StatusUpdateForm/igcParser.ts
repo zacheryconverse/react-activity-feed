@@ -1,7 +1,7 @@
 // @ts-nocheck
 import { parse } from 'igc-parser';
 import * as turf from '@turf/turf';
-import countryReverseGeocoding from 'country-reverse-geocoding';
+import { country_reverse_geocoding } from 'country-reverse-geocoding';
 
 export interface Fix {
   gpsAltitude: number;
@@ -331,10 +331,10 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
 
   const regionsForFlight = new Set<string>();
   // Initialize the country reverse geocoding
-  const crg = countryReverseGeocoding({});
+  const crg = country_reverse_geocoding();
 
-  const wasInMexico = flightData.fixes.some((fix) => {
-    const country = crg.getCountry(fix.latitude, fix.longitude);
+  const wasInMexico = flightData.points.some((point) => {
+    const country = crg.get_country(point.latitude, point.longitude);
     console.log('Country:', country);
     return country && country.name.toLowerCase() === 'mexico';
   });

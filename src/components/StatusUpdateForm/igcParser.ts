@@ -67,33 +67,34 @@ interface LegDetail {
   percentOfRoute: string;
 }
 
-// Define regions using GeoJSON polygons
 const regions = [
-  {
-    name: 'mexico',
-    polygon: turf.polygon([
-      [
-        [-117.0, 14.5],
-        [-117.0, 29.5],
-        [-86.5, 29.5],
-        [-86.5, 14.5],
-        [-117.0, 14.5],
-      ],
-    ]),
-  },
+  // {
+  //   name: 'mexico',
+  //   polygon: turf.polygon([
+  //     [
+  //       [-117.0, 14.5],
+  //       [-117.0, 29.5],
+  //       [-86.5, 29.5],
+  //       [-86.5, 14.5],
+  //       [-117.0, 14.5],
+  //     ],
+  //   ]),
+  // },
   {
     name: 'alps',
     polygon: turf.polygon([
       [
-        [5.0, 44.0],
-        [10.5, 44.0],
-        [10.5, 48.5],
-        [5.0, 48.5],
-        [5.0, 44.0],
+        [4.4, 43.7],
+        [7.5, 43.9],
+        [14.0, 45.6],
+        [15.8, 46.4],
+        [16.3, 48.0],
+        [14.7, 48.1],
+        [6.6, 47.2],
+        [4.4, 43.7],
       ],
     ]),
   },
-  // Add more regions as needed
 ];
 
 const isPointInRegion = (latitude: number, longitude: number, region: string) => {
@@ -330,23 +331,19 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   });
 
   const regionsForFlight = new Set<string>();
-  // Initialize the country reverse geocoding
   const crg = country_reverse_geocoding();
 
-  const wasInMexico = points.some((point) => {
-    const country = crg.get_country(point.latitude, point.longitude);
-    console.log('Country:', country);
-    return country && country.name.toLowerCase() === 'mexico';
-  });
-
-  if (wasInMexico) {
-    regionsForFlight.add('mexico');
-  }
-
   points.forEach((point) => {
+    const country = crg.get_country(point.latitude, point.longitude);
+    if (country) {
+      regionsForFlight.add(country.name.toLowerCase().replace(/\s/g, ''));
+      console.log('Country:', country.name, country.name.toLowerCase().replace(/\s/g, ''));
+    }
+
     regions.forEach((region) => {
       if (isPointInRegion(point.latitude, point.longitude, region)) {
         regionsForFlight.add(region.name);
+        console.log('Region:', region.name);
       }
     });
   });

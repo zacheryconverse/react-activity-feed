@@ -67,41 +67,6 @@ interface LegDetail {
   percentOfRoute: string;
 }
 
-const regions = [
-  // {
-  //   name: 'mexico',
-  //   polygon: turf.polygon([
-  //     [
-  //       [-117.0, 14.5],
-  //       [-117.0, 29.5],
-  //       [-86.5, 29.5],
-  //       [-86.5, 14.5],
-  //       [-117.0, 14.5],
-  //     ],
-  //   ]),
-  // },
-  {
-    name: 'alps',
-    polygon: turf.polygon([
-      [
-        [4.4, 43.7],
-        [7.5, 43.9],
-        [14.0, 45.6],
-        [15.8, 46.4],
-        [16.3, 48.0],
-        [14.7, 48.1],
-        [6.6, 47.2],
-        [4.4, 43.7],
-      ],
-    ]),
-  },
-];
-
-const isPointInRegion = (latitude: number, longitude: number, region: string) => {
-  const point = turf.point([longitude, latitude]);
-  return turf.booleanPointInPolygon(point, region.polygon);
-};
-
 const formatDuration = (seconds: number) => {
   const hours = Math.floor(seconds / 3600);
   const minutes = Math.floor((seconds % 3600) / 60);
@@ -330,14 +295,51 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     time: fixes[fixes.length - 1].time,
   });
 
+  const regions = [
+    // {
+    //   name: 'mexico',
+    //   polygon: turf.polygon([
+    //     [
+    //       [-117.0, 14.5],
+    //       [-117.0, 29.5],
+    //       [-86.5, 29.5],
+    //       [-86.5, 14.5],
+    //       [-117.0, 14.5],
+    //     ],
+    //   ]),
+    // },
+    {
+      name: 'alps',
+      polygon: turf.polygon([
+        [
+          [4.4, 43.7],
+          [7.5, 43.9],
+          [14.0, 45.6],
+          [15.8, 46.4],
+          [16.3, 48.0],
+          [14.7, 48.1],
+          [6.6, 47.2],
+          [4.4, 43.7],
+        ],
+      ]),
+    },
+  ];
+
+  const isPointInRegion = (latitude: number, longitude: number, region: string) => {
+    const point = turf.point([longitude, latitude]);
+    return turf.booleanPointInPolygon(point, region.polygon);
+  };
+
   const regionsForFlight = new Set<string>();
   const crg = country_reverse_geocoding();
 
   points.forEach((point) => {
     const country = crg.get_country(point.latitude, point.longitude);
-    if (country) {
-      regionsForFlight.add(country.name.toLowerCase().replace(/\s/g, ''));
-      console.log('Country:', country.name, country.name.toLowerCase().replace(/\s/g, ''));
+    const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
+
+    if (country && !regionsForFlight.has(formattedCountry)) {
+      regionsForFlight.add(formattedCountry);
+      console.log('Country:', country.name, formattedCountry);
     }
 
     regions.forEach((region) => {
@@ -347,7 +349,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
       }
     });
   });
-
+  console.log('regionsForFlight:', regionsForFlight);
   let totalPointsDistance = 0;
   for (let i = 0; i < points.length - 1; i++) {
     totalPointsDistance += haversineDistance(

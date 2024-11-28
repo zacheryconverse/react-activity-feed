@@ -1,13 +1,10 @@
 // @ts-nocheck
 import { parse } from 'igc-parser';
 // import * as turf from '@turf/turf';
-// import { booleanPointInPolygon, point, polygon } from '@turf/turf';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-// import point from '@turf/helpers/point';
-// import polygon from '@turf/helpers/polygon';
-import { point, polygon } from '@turf/helpers';
-import { Feature, Polygon } from '@turf/helpers';
-import { country_reverse_geocoding } from 'country-reverse-geocoding';
+import { Feature, Polygon, point, polygon } from '@turf/helpers';
+// import { country_reverse_geocoding } from 'country-reverse-geocoding';
+import { reverseGeocodeCountry } from 'country-reverse-geocoding-lookup';
 
 console.log('booleanPointInPolygon:', booleanPointInPolygon);
 console.log('point:', point);
@@ -353,10 +350,9 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   };
 
   const regionsForFlight = new Set<string>();
-  const crg = country_reverse_geocoding();
 
   points.forEach((point) => {
-    const country = crg.get_country(point.latitude, point.longitude);
+    const country = reverseGeocodeCountry(point.longitude, point.latitude);
     const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
 
     if (country && !regionsForFlight.has(formattedCountry)) {

@@ -3,8 +3,9 @@ import { parse } from 'igc-parser';
 // import * as turf from '@turf/turf';
 // import { booleanPointInPolygon, point, polygon } from '@turf/turf';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import point from '@turf/helpers/point';
-import polygon from '@turf/helpers/polygon';
+// import point from '@turf/helpers/point';
+// import polygon from '@turf/helpers/polygon';
+import { point, polygon } from '@turf/helpers';
 import { Feature, Polygon } from '@turf/helpers';
 import { country_reverse_geocoding } from 'country-reverse-geocoding';
 

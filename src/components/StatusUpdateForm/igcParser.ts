@@ -1,9 +1,16 @@
 // @ts-nocheck
 import { parse } from 'igc-parser';
 // import * as turf from '@turf/turf';
-import { booleanPointInPolygon, point, polygon } from '@turf/turf';
+// import { booleanPointInPolygon, point, polygon } from '@turf/turf';
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import point from '@turf/helpers/point';
+import polygon from '@turf/helpers/polygon';
 import { Feature, Polygon } from '@turf/helpers';
 import { country_reverse_geocoding } from 'country-reverse-geocoding';
+
+console.log('booleanPointInPolygon:', booleanPointInPolygon);
+console.log('point:', point);
+console.log('polygon:', polygon);
 
 export interface Fix {
   gpsAltitude: number;

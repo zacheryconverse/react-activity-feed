@@ -4,8 +4,7 @@ import { parse } from 'igc-parser';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { Feature, Polygon, point, polygon } from '@turf/helpers';
 // import { country_reverse_geocoding } from 'country-reverse-geocoding';
-// import { reverseGeocodeCountry } from 'country-reverse-geocoding-lookup';
-import crgModule from 'country-reverse-geocoding';
+import reverseGeocode from 'reverse-geocode';
 
 export interface Fix {
   gpsAltitude: number;
@@ -347,9 +346,9 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   };
 
   const regionsForFlight = new Set<string>();
-  const crg = crgModule.country_reverse_geocoding();
+
   points.forEach((point) => {
-    const country = crg.get_country(point.latitude, point.longitude);
+    const country = reverseGeocode.country(point.latitude, point.longitude);
     const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
 
     if (country && !regionsForFlight.has(formattedCountry)) {

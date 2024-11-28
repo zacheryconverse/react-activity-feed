@@ -5,11 +5,7 @@ import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { Feature, Polygon, point, polygon } from '@turf/helpers';
 // import { country_reverse_geocoding } from 'country-reverse-geocoding';
 // import { reverseGeocodeCountry } from 'country-reverse-geocoding-lookup';
-import CountryReverseGeocoding from 'country-reverse-geocoding';
-
-console.log('booleanPointInPolygon:', booleanPointInPolygon);
-console.log('point:', point);
-console.log('polygon:', polygon);
+import { CountryReverseGeocoding } from 'country-reverse-geocoding';
 
 export interface Fix {
   gpsAltitude: number;

@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { parse } from 'igc-parser';
 import * as turf from '@turf/turf';
+import { Feature, Polygon } from '@turf/helpers';
 import { country_reverse_geocoding } from 'country-reverse-geocoding';
 
 export interface Fix {
@@ -295,7 +296,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     time: fixes[fixes.length - 1].time,
   });
 
-  const regions = [
+  const regions: { name: string; polygon: Feature<Polygon> }[] = [
     // {
     //   name: 'mexico',
     //   polygon: turf.polygon([
@@ -325,9 +326,18 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     },
   ];
 
-  const isPointInRegion = (latitude: number, longitude: number, region: string) => {
-    const point = turf.point([longitude, latitude]);
-    return turf.booleanPointInPolygon(point, region.polygon);
+  const isPointInRegion = (
+    latitude: number,
+    longitude: number,
+    region: { name: string; polygon: Feature<Polygon> },
+  ) => {
+    try {
+      const point = turf.point([longitude, latitude]);
+      return turf.booleanPointInPolygon(point, region.polygon);
+    } catch (error) {
+      console.error(`Error checking point in region ${region.name}:`, error);
+      return false;
+    }
   };
 
   const regionsForFlight = new Set<string>();

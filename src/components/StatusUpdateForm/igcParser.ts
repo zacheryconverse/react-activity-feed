@@ -2,8 +2,10 @@
 import { parse } from 'igc-parser';
 // import * as turf from '@turf/turf';
 // import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import { point, polygon, booleanPointInPolygon } from '@turf/turf';
 // import { Feature, Polygon, point, polygon } from '@turf/helpers';
-// import { country_reverse_geocoding } from 'country-reverse-geocoding';
+import { Feature, Polygon } from '@turf/helpers';
+import { country_reverse_geocoding } from 'country-reverse-geocoding';
 // import reverseGeocode from 'reverse-geocode';
 
 export interface Fix {
@@ -298,72 +300,73 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     time: fixes[fixes.length - 1].time,
   });
 
-  // const regions: { name: string; polygon: Feature<Polygon> }[] = [
-  //   // {
-  //   //   name: 'mexico',
-  //   //   polygon: turf.polygon([
-  //   //     [
-  //   //       [-117.0, 14.5],
-  //   //       [-117.0, 29.5],
-  //   //       [-86.5, 29.5],
-  //   //       [-86.5, 14.5],
-  //   //       [-117.0, 14.5],
-  //   //     ],
-  //   //   ]),
-  //   // },
-  //   {
-  //     name: 'alps',
-  //     // polygon: turf.polygon([
-  //     polygon: polygon([
-  //       [
-  //         [4.4, 43.7],
-  //         [7.5, 43.9],
-  //         [14.0, 45.6],
-  //         [15.8, 46.4],
-  //         [16.3, 48.0],
-  //         [14.7, 48.1],
-  //         [6.6, 47.2],
-  //         [4.4, 43.7],
-  //       ],
-  //     ]),
-  //   },
-  // ];
+  const regions: { name: string; polygon: Feature<Polygon> }[] = [
+    // {
+    //   name: 'mexico',
+    //   polygon: turf.polygon([
+    //     [
+    //       [-117.0, 14.5],
+    //       [-117.0, 29.5],
+    //       [-86.5, 29.5],
+    //       [-86.5, 14.5],
+    //       [-117.0, 14.5],
+    //     ],
+    //   ]),
+    // },
+    {
+      name: 'alps',
+      // polygon: turf.polygon([
+      polygon: polygon([
+        [
+          [4.4, 43.7],
+          [7.5, 43.9],
+          [14.0, 45.6],
+          [15.8, 46.4],
+          [16.3, 48.0],
+          [14.7, 48.1],
+          [6.6, 47.2],
+          [4.4, 43.7],
+        ],
+      ]),
+    },
+  ];
 
-  // const isPointInRegion = (
-  //   latitude: number,
-  //   longitude: number,
-  //   region: { name: string; polygon: Feature<Polygon> },
-  // ) => {
-  //   try {
-  //     // const point = turf.point([longitude, latitude]);
-  //     const pt = point([longitude, latitude]);
-  //     // return turf.booleanPointInPolygon(point, region.polygon);
-  //     return booleanPointInPolygon(pt, region.polygon);
-  //   } catch (error) {
-  //     console.error(`Error checking point in region ${region.name}:`, error);
-  //     return false;
-  //   }
-  // };
+  const isPointInRegion = (
+    latitude: number,
+    longitude: number,
+    region: { name: string; polygon: Feature<Polygon> },
+  ) => {
+    try {
+      // const point = turf.point([longitude, latitude]);
+      const pt = point([longitude, latitude]);
+      // return turf.booleanPointInPolygon(point, region.polygon);
+      return booleanPointInPolygon(pt, region.polygon);
+    } catch (error) {
+      console.error(`Error checking point in region ${region.name}:`, error);
+      return false;
+    }
+  };
 
-  // const regionsForFlight = new Set<string>();
+  const regionsForFlight = new Set<string>();
+  const reverseGeocode = country_reverse_geocoding();
 
-  // points.forEach((point) => {
-  //   const country = reverseGeocode.country(point.latitude, point.longitude);
-  //   const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
+  points.forEach((point) => {
+    const country = reverseGeocode.country(point.latitude, point.longitude);
+    const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
 
-  //   if (country && !regionsForFlight.has(formattedCountry)) {
-  //     regionsForFlight.add(formattedCountry);
-  //     console.log('Country:', country.name, formattedCountry);
-  //   }
+    if (country && !regionsForFlight.has(formattedCountry)) {
+      regionsForFlight.add(formattedCountry);
+      console.log('Country:', country.name, formattedCountry);
+    }
 
-  //   regions.forEach((region) => {
-  //     if (isPointInRegion(point.latitude, point.longitude, region)) {
-  //       regionsForFlight.add(region.name);
-  //       console.log('Region:', region.name);
-  //     }
-  //   });
-  // });
-  // console.log('regionsForFlight:', regionsForFlight);
+    regions.forEach((region) => {
+      if (isPointInRegion(point.latitude, point.longitude, region)) {
+        regionsForFlight.add(region.name);
+        console.log('Region:', region.name);
+      }
+    });
+  });
+  console.log('regionsForFlight:', regionsForFlight);
 
   let totalPointsDistance = 0;
   for (let i = 0; i < points.length - 1; i++) {
@@ -403,6 +406,6 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     maxAltitudeGain,
     gliderType,
     totalDistance,
-    // regions: Array.from(regionsForFlight),
+    regions: Array.from(regionsForFlight),
   };
 };

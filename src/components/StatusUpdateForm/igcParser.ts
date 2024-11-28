@@ -403,6 +403,6 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     maxAltitudeGain,
     gliderType,
     totalDistance,
-    regions: Array.from(regionsForFlight),
+    // regions: Array.from(regionsForFlight),
   };
 };

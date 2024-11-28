@@ -2,11 +2,14 @@
 import { parse } from 'igc-parser';
 // import * as turf from '@turf/turf';
 // import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
-import { point, polygon, booleanPointInPolygon } from '@turf/turf';
+// import { point, polygon, booleanPointInPolygon } from '@turf/turf';
+import { point, polygon } from '@turf/turf';
+import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 // import { Feature, Polygon, point, polygon } from '@turf/helpers';
 import { Feature, Polygon } from '@turf/helpers';
 import { country_reverse_geocoding } from 'country-reverse-geocoding';
-// import reverseGeocode from 'reverse-geocode';
+
+console.log(typeof booleanPointInPolygon); // Should log "function"
 
 export interface Fix {
   gpsAltitude: number;

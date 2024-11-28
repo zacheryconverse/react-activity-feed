@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { parse } from 'igc-parser';
-import * as turf from '@turf/turf';
+// import * as turf from '@turf/turf';
+import { booleanPointInPolygon, point, polygon } from '@turf/turf';
 import { Feature, Polygon } from '@turf/helpers';
 import { country_reverse_geocoding } from 'country-reverse-geocoding';
 
@@ -311,7 +312,8 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     // },
     {
       name: 'alps',
-      polygon: turf.polygon([
+      // polygon: turf.polygon([
+      polygon: polygon([
         [
           [4.4, 43.7],
           [7.5, 43.9],
@@ -332,8 +334,10 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     region: { name: string; polygon: Feature<Polygon> },
   ) => {
     try {
-      const point = turf.point([longitude, latitude]);
-      return turf.booleanPointInPolygon(point, region.polygon);
+      // const point = turf.point([longitude, latitude]);
+      const pt = point([longitude, latitude]);
+      // return turf.booleanPointInPolygon(point, region.polygon);
+      return booleanPointInPolygon(pt, region.polygon);
     } catch (error) {
       console.error(`Error checking point in region ${region.name}:`, error);
       return false;

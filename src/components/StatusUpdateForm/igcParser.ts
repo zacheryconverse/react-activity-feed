@@ -1,7 +1,8 @@
 // @ts-nocheck
 import { parse } from 'igc-parser';
-import * as turf from '@turf/turf';
+// import * as turf from '@turf/turf';
 import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+import { point, polygon } from '@turf/helpers';
 // import { point, polygon, booleanPointInPolygon } from '@turf/turf';
 // import { point, polygon } from '@turf/turf';
 // import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
@@ -9,7 +10,7 @@ import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 import { Feature, Polygon } from '@turf/helpers';
 import { country_reverse_geocoding } from 'country-reverse-geocoding';
 
-console.log('turf.booleanPointInPolygon', typeof turf.booleanPointInPolygon); // Should log "function"
+// console.log('turf.booleanPointInPolygon', typeof turf.booleanPointInPolygon); // Should log "function"
 console.log('@turf/boolean-point-in-polygon', typeof booleanPointInPolygon); // Should log "function"
 
 export interface Fix {
@@ -319,8 +320,8 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     // },
     {
       name: 'alps',
-      // polygon: polygon([
-      polygon: turf.polygon([
+      // polygon: turf.polygon([
+      polygon: polygon([
         [
           [4.4, 43.7],
           [7.5, 43.9],
@@ -341,9 +342,10 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     region: { name: string; polygon: Feature<Polygon> },
   ) => {
     try {
-      const point = turf.point([longitude, latitude]);
-      console.log('point:', point);
-      // const pt = point([longitude, latitude]);
+      // const point = turf.point([longitude, latitude]);
+      // console.log('point:', point);
+      const pt = point([longitude, latitude]);
+      console.log('pt:', pt);
       // return turf.booleanPointInPolygon(point, region.polygon);
       return booleanPointInPolygon(pt, region.polygon);
     } catch (error) {
@@ -365,6 +367,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     }
 
     regions.forEach((region) => {
+      console.log('Region:', region.name);
       if (isPointInRegion(point.latitude, point.longitude, region)) {
         regionsForFlight.add(region.name);
         console.log('Region:', region.name);

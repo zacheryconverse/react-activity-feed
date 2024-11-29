@@ -9,7 +9,8 @@ import * as turf from '@turf/turf';
 import { Feature, Polygon } from '@turf/helpers';
 import { country_reverse_geocoding } from 'country-reverse-geocoding';
 
-console.log(typeof booleanPointInPolygon); // Should log "function"
+console.log('booleanPointInPolygon', typeof turf.booleanPointInPolygon); // Should log "function"
+// console.log(typeof booleanPointInPolygon); // Should log "function"
 
 export interface Fix {
   gpsAltitude: number;
@@ -318,8 +319,8 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     // },
     {
       name: 'alps',
-      // polygon: turf.polygon([
-      polygon: polygon([
+      // polygon: polygon([
+      polygon: turf.polygon([
         [
           [4.4, 43.7],
           [7.5, 43.9],

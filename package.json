@@ -120,6 +120,7 @@
   "dependencies": {
     "@babel/runtime": "^7.14.0",
     "@emotion/react": "^11.4.0",
+    "@turf/boolean-point-in-polygon": "^7.1.0",
     "@turf/helpers": "^7.1.0",
     "@turf/turf": "^7.1.0",
     "@types/emoji-mart": "^3.0.4",

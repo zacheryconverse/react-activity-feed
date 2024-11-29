@@ -1,10 +1,10 @@
 // @ts-nocheck
 import { parse } from 'igc-parser';
-// import * as turf from '@turf/turf';
+import * as turf from '@turf/turf';
 // import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 // import { point, polygon, booleanPointInPolygon } from '@turf/turf';
-import { point, polygon } from '@turf/turf';
-import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
+// import { point, polygon } from '@turf/turf';
+// import booleanPointInPolygon from '@turf/boolean-point-in-polygon';
 // import { Feature, Polygon, point, polygon } from '@turf/helpers';
 import { Feature, Polygon } from '@turf/helpers';
 import { country_reverse_geocoding } from 'country-reverse-geocoding';
@@ -340,10 +340,11 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     region: { name: string; polygon: Feature<Polygon> },
   ) => {
     try {
-      // const point = turf.point([longitude, latitude]);
-      const pt = point([longitude, latitude]);
-      // return turf.booleanPointInPolygon(point, region.polygon);
-      return booleanPointInPolygon(pt, region.polygon);
+      const point = turf.point([longitude, latitude]);
+      console.log('point:', point);
+      // const pt = point([longitude, latitude]);
+      return turf.booleanPointInPolygon(point, region.polygon);
+      // return booleanPointInPolygon(pt, region.polygon);
     } catch (error) {
       console.error(`Error checking point in region ${region.name}:`, error);
       return false;

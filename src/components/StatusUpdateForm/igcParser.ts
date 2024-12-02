@@ -358,7 +358,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   const reverseGeocode = country_reverse_geocoding();
 
   points.forEach((point) => {
-    const country = reverseGeocode.country(point.latitude, point.longitude);
+    const country = reverseGeocode.get_country(point.latitude, point.longitude);
     const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
 
     if (country && !regionsForFlight.has(formattedCountry)) {

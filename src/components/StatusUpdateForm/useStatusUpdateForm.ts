@@ -294,13 +294,13 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         // console.log('result', result);
         const flightStats = extractFlightStatistics(result);
         const url = await client.files.upload(file);
-        // console.log('Flight Statistics:', flightStats);
+        console.log('Flight Statistics:', flightStats);
         // Retrieve the current user ID from your client context
         const userId = client.currentUser?.id;
         if (!userId) throw new Error('User ID not available');
 
         // Compute a unique key for the IGC flight
-        const uniqueKey = `${userId}-${flightStats.date}-${flightStats.routDistance.toFixed(1)}`;
+        const uniqueKey = `${userId}-${flightStats.date}-${flightStats.routeDistance.toFixed(1)}`;
 
         // Create a FormData object to send to the server endpoint.
         // Note that flightStats is stringified.

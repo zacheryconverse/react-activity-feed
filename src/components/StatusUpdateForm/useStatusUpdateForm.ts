@@ -10,6 +10,7 @@ import {
   useEffect,
   useLayoutEffect,
 } from 'react';
+import axios from 'axios';
 import _uniq from 'lodash/uniq';
 import _difference from 'lodash/difference';
 import _includes from 'lodash/includes';
@@ -310,15 +311,11 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         formData.append('flightStats', JSON.stringify(flightStats));
         formData.append('uniqueKey', uniqueKey);
 
-        const response = await fetch('http://localhost:8080/auth/upload-igc', {
-          method: 'POST',
-          body: formData,
-          headers: {
-            'Content-Type': 'multipart/form-data',
-          },
+        // const response = await axios.post(`${process.env.API_ENDPOINT}/auth/upload-igc`, formData, {
+        const response = await axios.post(`http://localhost:8080/auth/upload-igc`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
         });
-        const data = await response.json();
-        console.log('IGC flight saved:', data);
+        console.log('IGC flight saved:', response.data);
 
         setIgcs((prevState) => {
           prevState.data[id] = {

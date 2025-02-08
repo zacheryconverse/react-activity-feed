@@ -1,11 +1,10 @@
 .raf-card {
   display: block;
   text-decoration: none;
-  border-radius: 6px;
+  border-radius: 10px;
   overflow: hidden;
   position: relative;
-  border: 1px solid shade(#fafafa, 20%); // color(#fafafa shade(20%));
-  box-shadow: 0 1px 3px 0 change-color($black, $alpha: 0.1); // color-mod(var(black) a(10%));
+  // box-shadow: 0 1px 3px 0 change-color($black, $alpha: 0.1); // color-mod(var(black) a(10%));
 
   &--with-image {
     .raf-icon-button {
@@ -19,7 +18,7 @@
 
 .raf-card__image {
   width: 100%;
-  height: 177px;
+  height: 316px;
   position: relative;
   display: flex;
   justify-content: flex-end;
@@ -36,13 +35,13 @@
   width: inherit;
   height: inherit;
   object-fit: cover;
+  border-radius: 10px;
 }
 
 .raf-card__content {
   display: flex;
   align-items: center;
   border-radius: 0 0 6px 6px;
-  background-color: #fafafa;
   padding: 6px 6px;
   width: 100%;
 }
@@ -66,24 +65,27 @@
 .raf-card__title,
 .raf-card__url,
 .raf-card__description {
-  font-weight: 400;
+  font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
   margin: 0;
-  color: $fontColor;
+  color: beige;
 }
 
 .raf-card__title {
-  font-size: 16px;
+  font-size: 18px;
+  color: beige;
 }
 
 .raf-card__url {
-  font-size: 12px;
-  color: $primary;
+  font-size: 14px;
+  color: var(--faded-theme-color);
 }
 
 .raf-card__description {
-  font-size: 12px;
+  font-size: 13px;
+  color: blanchedalmond;
+  font-weight: 300;
 }

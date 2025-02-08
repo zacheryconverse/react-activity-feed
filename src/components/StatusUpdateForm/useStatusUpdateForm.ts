@@ -306,8 +306,8 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         formData.append('userId', userId);
         formData.append('flightStats', JSON.stringify(flightStats));
 
-        // const response = await axios.post(`${process.env.API_ENDPOINT}/auth/upload-igc`, formData, {
-        const response = await axios.post(`http://localhost:8080/auth/upload-igc`, formData, {
+        // const response = await axios.post(`http://localhost:8080/auth/upload-igc`, formData, {
+        const response = await axios.post(`${process.env.API_ENDPOINT}/auth/upload-igc`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         console.log('IGC flight saved:', response.data);

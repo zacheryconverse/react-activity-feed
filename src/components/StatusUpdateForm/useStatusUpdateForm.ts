@@ -307,7 +307,12 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         formData.append('flightStats', JSON.stringify(flightStats));
 
         // const response = await axios.post(`http://localhost:8080/auth/upload-igc`, formData, {
-        const response = await axios.post(`${process.env.API_ENDPOINT}/auth/upload-igc`, formData, {
+        // const response = await axios.post(`https://vol-server-a7417ca800ec.herokuapp.com/auth/upload-igc`,
+        const baseURL =
+          window.location.hostname === 'localhost'
+            ? 'http://localhost:8080'
+            : 'https://vol-server-a7417ca800ec.herokuapp.com';
+        const response = await axios.post(`${baseURL}/auth/upload-igc`, formData, {
           headers: { 'Content-Type': 'multipart/form-data' },
         });
         console.log('IGC flight saved:', response.data);

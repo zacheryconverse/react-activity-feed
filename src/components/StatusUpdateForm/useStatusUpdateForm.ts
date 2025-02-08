@@ -299,23 +299,22 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         // Retrieve the current user ID from your client context
         const userId = client.currentUser?.id;
         if (!userId) throw new Error('User ID not available');
-        // Create a FormData object to send to the server endpoint.
-        // Note that flightStats is stringified.
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('userId', userId);
-        formData.append('flightStats', JSON.stringify(flightStats));
+
+        // const formData = new FormData();
+        // formData.append('file', file);
+        // formData.append('userId', userId);
+        // formData.append('flightStats', JSON.stringify(flightStats));
 
         // const response = await axios.post(`http://localhost:8080/auth/upload-igc`, formData, {
         // const response = await axios.post(`https://vol-server-a7417ca800ec.herokuapp.com/auth/upload-igc`,
-        const baseURL =
-          window.location.hostname === 'localhost'
-            ? 'http://localhost:8080'
-            : 'https://vol-server-a7417ca800ec.herokuapp.com';
-        const response = await axios.post(`${baseURL}/auth/upload-igc`, formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        });
-        console.log('IGC flight saved:', response.data);
+        // const baseURL =
+        //   window.location.hostname === 'localhost'
+        //     ? 'http://localhost:8080'
+        //     : 'https://vol-server-a7417ca800ec.herokuapp.com';
+        // const response = await axios.post(`${baseURL}/auth/upload-igc`, formData, {
+        //   headers: { 'Content-Type': 'multipart/form-data' },
+        // });
+        // console.log('IGC flight saved:', response.data);
 
         setIgcs((prevState) => {
           prevState.data[id] = {
@@ -620,6 +619,21 @@ export function useStatusUpdateForm<
     !uploadError;
 
   const addActivity = async () => {
+    for (const igc of uploadedIgcs) {
+      const formData = new FormData();
+      formData.append('file', igc.file);
+      formData.append('userId', client.currentUser?.id);
+      formData.append('flightStats', JSON.stringify(igc.data));
+
+      const baseURL =
+        window.location.hostname === 'localhost'
+          ? 'http://localhost:8080'
+          : 'https://vol-server-a7417ca800ec.herokuapp.com';
+      await axios.post(`${baseURL}/auth/upload-igc`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+    }
+
     const activity: NewActivity<AT> = {
       actor: client.currentUser?.ref() as string,
       object: object(),

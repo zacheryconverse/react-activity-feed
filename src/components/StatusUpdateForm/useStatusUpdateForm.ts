@@ -619,7 +619,10 @@ export function useStatusUpdateForm<
     !uploadError;
 
   const addActivity = async () => {
-    for (const igc of uploadedIgcs) {
+    let flightId;
+    // for (const igc of uploadedIgcs) {
+    if (uploadedIgcs.length === 1) {
+      const igc = uploadedIgcs[0];
       const formData = new FormData();
       formData.append('file', igc.file);
       formData.append('userId', client.currentUser?.id);
@@ -629,9 +632,10 @@ export function useStatusUpdateForm<
         window.location.hostname === 'localhost'
           ? 'http://localhost:8080'
           : 'https://vol-server-a7417ca800ec.herokuapp.com';
-      await axios.post(`${baseURL}/auth/upload-igc`, formData, {
+      const response = await axios.post(`${baseURL}/auth/upload-igc`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      flightId = response.data.flightId;
     }
 
     const activity: NewActivity<AT> = {
@@ -639,6 +643,7 @@ export function useStatusUpdateForm<
       object: object(),
       verb: activityVerb,
       text: text.trim(),
+      ...(flightId && { flightId }),
       attachments: {
         og: activeOg,
         images: uploadedImages.map((image) => image.url).filter(Boolean) as string[],

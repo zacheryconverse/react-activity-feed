@@ -51,6 +51,8 @@ export type ActivityProps<
   /** Handler for any routing you may do on clicks on Mentions */
   onClickMention?: WordClickHandler;
   onClickUser?: (user: UserOrDefaultReturnType<UT>) => void;
+  /** Handler for image loading errors */
+  onImageError?: (event: React.SyntheticEvent<HTMLImageElement, Event>) => void;
   /** UI component to render original activity within a repost
    * #Repost (Component)#
    */
@@ -99,6 +101,7 @@ export const Activity = <
   onClickHashtag,
   onClickMention,
   onClickUser,
+  onImageError,
   Repost = DefaultRepost,
   userId,
   feedGroup,
@@ -119,6 +122,7 @@ export const Activity = <
       onClickHashtag,
       onClickMention,
       onClickUser,
+      onImageError,
       Repost,
       userId,
     })}

@@ -11,6 +11,7 @@ export type CardProps = PropsWithElementAttributes<
     handleClose?: (e: SyntheticEvent) => void;
     image?: string | null;
     nolink?: boolean;
+    onImageError?: (event: React.SyntheticEvent<HTMLImageElement, Event>) => void;
   } & Pick<OGAPIResponse, 'description' | 'images' | 'url' | 'title'>,
   HTMLAnchorElement
 >;
@@ -26,6 +27,7 @@ export const Card = ({
   title,
   className,
   style,
+  onImageError,
 }: CardProps) => {
   const sanitizedURL = useMemo(() => sanitizeURL(url), [url]);
   const trimmedURL = useMemo(() => trimURL(sanitizedURL), [sanitizedURL]);
@@ -50,7 +52,7 @@ export const Card = ({
           {image === null ? (
             <AvatarIcon preserveAspectRatio="xMinYMin slice" />
           ) : (
-            <img src={image} alt={alt || title || description || ''} />
+            <img src={image} alt={alt || title || description || ''} onError={onImageError} />
           )}
         </div>
       )}

@@ -51,7 +51,13 @@ export const ActivityContent = <
 
       {og && (
         <div style={{ padding: '8px 16px' }}>
-          {og.videos ? <Video og={og} /> : og.audios ? <Audio og={og} /> : smartRender(Card, og)}
+          {og.videos ? (
+            <Video og={og} />
+          ) : og.audios ? (
+            <Audio og={og} />
+          ) : (
+            smartRender(Card, { ...og, onImageError: props.onImageError })
+          )}
         </div>
       )}
 

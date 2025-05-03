@@ -33,6 +33,7 @@ export type StreamAppProps<UT extends DefaultUT = DefaultUT> = {
   appId: string;
   token: string;
   analyticsToken?: string;
+  baseUrl?: string;
   children?: ReactNode;
   defaultUserData?: UT;
   errorHandler?: ErrorHandler;
@@ -53,6 +54,7 @@ export type StreamContextValue<
   client: null | StreamClient<UT, AT, CT, RT, CRT, PT>;
   errorHandler: ErrorHandler;
   sharedFeedManagers: SharedFeedManagers<UT, AT, CT, RT, CRT, PT>;
+  baseUrl?: string;
   user?: StreamUser<UT>;
   userData?: UT;
 };
@@ -109,6 +111,7 @@ export function StreamApp<
   defaultUserData,
   options,
   sharedFeeds = [{ feedGroup: 'notification', notify: true, options: { mark_seen: true } }],
+  baseUrl,
 }: StreamAppProps<UT>) {
   const [client, setClient] = useState<StreamClient<UT, AT, CT, RT, CRT, PT> | null>(null);
   const [user, setUser] = useState<StreamUser<UT, AT, CT, RT, CRT, PT>>();
@@ -171,7 +174,7 @@ export function StreamApp<
   if (!translator?.t) return null;
 
   return (
-    <StreamAppProvider value={{ client, analyticsClient, errorHandler, userData, user, sharedFeedManagers }}>
+    <StreamAppProvider value={{ client, analyticsClient, errorHandler, userData, user, sharedFeedManagers, baseUrl }}>
       <TranslationProvider value={translator}>
         <>{children || 'You are connected to Stream, Throw some components in here!'}</>
       </TranslationProvider>

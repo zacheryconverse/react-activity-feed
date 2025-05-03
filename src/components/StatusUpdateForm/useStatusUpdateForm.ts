@@ -563,6 +563,7 @@ export function useStatusUpdateForm<
     (e, type) => appCtx.errorHandler(e, type, { userId, feedGroup }),
     [],
   );
+  const baseUrl = appCtx.baseUrl;
 
   const { text, setText, insertText, onSelectEmoji, textInputRef } = useTextArea();
 
@@ -628,11 +629,16 @@ export function useStatusUpdateForm<
       formData.append('userId', client.currentUser?.id);
       formData.append('flightStats', JSON.stringify(igc.data));
 
-      const baseURL =
-        window.location.hostname === 'localhost'
-          ? 'http://localhost:8080'
-          : 'https://vol-server-a7417ca800ec.herokuapp.com';
-      const response = await axios.post(`${baseURL}/auth/upload-igc`, formData, {
+      if (!baseUrl) {
+        console.error(
+          'API endpoint (baseUrl) is not configured. Please ensure the StreamApp component is provided with a baseUrl prop.',
+        );
+        throw new Error(
+          'API endpoint (baseUrl) is not configured. Please ensure the StreamApp component is provided with a baseUrl prop.',
+        );
+      }
+
+      const response = await axios.post(`${baseUrl}/auth/upload-igc`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       flightId = response.data.flightId;

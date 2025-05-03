@@ -300,22 +300,6 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         const userId = client.currentUser?.id;
         if (!userId) throw new Error('User ID not available');
 
-        // const formData = new FormData();
-        // formData.append('file', file);
-        // formData.append('userId', userId);
-        // formData.append('flightStats', JSON.stringify(flightStats));
-
-        // const response = await axios.post(`http://localhost:8080/auth/upload-igc`, formData, {
-        // const response = await axios.post(`https://vol-server-a7417ca800ec.herokuapp.com/auth/upload-igc`,
-        // const baseURL =
-        //   window.location.hostname === 'localhost'
-        //     ? 'http://localhost:8080'
-        //     : 'https://vol-server-a7417ca800ec.herokuapp.com';
-        // const response = await axios.post(`${baseURL}/auth/upload-igc`, formData, {
-        //   headers: { 'Content-Type': 'multipart/form-data' },
-        // });
-        // console.log('IGC flight saved:', response.data);
-
         setIgcs((prevState) => {
           prevState.data[id] = {
             ...prevState.data[id],
@@ -563,7 +547,6 @@ export function useStatusUpdateForm<
     (e, type) => appCtx.errorHandler(e, type, { userId, feedGroup }),
     [],
   );
-  const baseUrl = appCtx.baseUrl;
 
   const { text, setText, insertText, onSelectEmoji, textInputRef } = useTextArea();
 
@@ -629,7 +612,7 @@ export function useStatusUpdateForm<
       formData.append('userId', client.currentUser?.id);
       formData.append('flightStats', JSON.stringify(igc.data));
 
-      if (!baseUrl) {
+      if (!appCtx.baseUrl) {
         console.error(
           'API endpoint (baseUrl) is not configured. Please ensure the StreamApp component is provided with a baseUrl prop.',
         );
@@ -638,7 +621,7 @@ export function useStatusUpdateForm<
         );
       }
 
-      const response = await axios.post(`${baseUrl}/auth/upload-igc`, formData, {
+      const response = await axios.post(`${appCtx.baseUrl}/auth/upload-igc`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       flightId = response.data.flightId;

@@ -158,13 +158,21 @@ export function StatusUpdateForm<
                   {t('Post')}
                 </Button>
               </div>
-              <span className="upload-hint">Browse, drag & drop, or paste a flight track (.igc) file or url</span>
+              <span className="upload-hint">Browse, drag & drop, or paste a flight track (.igc)</span>
             </PanelFooter>
 
             {state.isOgScraping && (
               <div className="raf-status-update-form__og-loading">
                 <LoadingIndicator /> {t('Getting website data...')}
               </div>
+            )}
+            {state.igcs.order.length > 0 && (
+              <FilePreviewer
+                uploads={state.igcs.order.map((id) => state.igcs.data[id]) as FileUpload[]}
+                handleRemove={state.removeIgc}
+                handleRetry={(id) => state.uploadIgc(id, state.igcs.data[id])}
+                handleFiles={state.uploadNewFiles}
+              />
             )}
             {state.activeOg && (
               <div style={{ margin: '8px 0' }}>
@@ -213,14 +221,6 @@ export function StatusUpdateForm<
                 uploads={state.files.order.map((id) => state.files.data[id]) as FileUpload[]}
                 handleRemove={state.removeFile}
                 handleRetry={(id) => state.uploadFile(id, state.files.data[id])}
-                handleFiles={state.uploadNewFiles}
-              />
-            )}
-            {state.igcs.order.length > 0 && (
-              <FilePreviewer
-                uploads={state.igcs.order.map((id) => state.igcs.data[id]) as FileUpload[]}
-                handleRemove={state.removeIgc}
-                handleRetry={(id) => state.uploadIgc(id, state.igcs.data[id])}
                 handleFiles={state.uploadNewFiles}
               />
             )}

@@ -133,6 +133,34 @@ export function StatusUpdateForm<
                 value: state.text,
               })}
             </div>
+
+            <PanelFooter>
+              <div style={{ display: 'flex' }}>
+                <div style={{ flex: 1 }}>
+                  <div style={{ marginRight: '32px', display: 'inline-block' }}>
+                    <FileUploadButton handleFiles={state.uploadNewFiles} accepts=".icg,.IGC">
+                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" height="40px">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"></path>
+                      </svg>
+                    </FileUploadButton>
+                  </div>
+                  <div style={{ marginRight: '32px', display: 'inline-block' }}>
+                    <ImageUploadButton resetOnChange handleFiles={state.uploadNewFiles} multiple />
+                  </div>
+                  {/* <div style={{ marginRight: '32px', display: 'inline-block' }}>
+                    <VideoUploadButton handleFiles={state.uploadNewFiles} multiple />
+                  </div> */}
+                  <EmojiPicker onSelect={state.onSelectEmoji} emojiData={emojiData} i18n={emojiI18n} />
+                  {FooterItem}
+                </div>
+
+                <Button type="submit" buttonStyle="primary" loading={state.submitting} disabled={!state.canSubmit()}>
+                  {t('Post')}
+                </Button>
+              </div>
+              <span className="upload-hint">Browse, drag & drop, or paste a flight track (.igc) file or url</span>
+            </PanelFooter>
+
             {state.isOgScraping && (
               <div className="raf-status-update-form__og-loading">
                 <LoadingIndicator /> {t('Getting website data...')}
@@ -171,6 +199,7 @@ export function StatusUpdateForm<
                 ))}
               </ol>
             )}
+
             {state.images.order.length > 0 && (
               <ImagePreviewer
                 imageUploads={state.images.order.map((id) => state.images.data[id]) as ImageUpload[]}
@@ -205,33 +234,6 @@ export function StatusUpdateForm<
               />
             )} */}
           </PanelContent>
-
-          <PanelFooter>
-            <div style={{ display: 'flex' }}>
-              <div style={{ flex: 1 }}>
-                <div style={{ marginRight: '32px', display: 'inline-block' }}>
-                  <FileUploadButton handleFiles={state.uploadNewFiles} accepts=".icg,.IGC">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" height="40px">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"></path>
-                    </svg>
-                  </FileUploadButton>
-                </div>
-                <div style={{ marginRight: '32px', display: 'inline-block' }}>
-                  <ImageUploadButton resetOnChange handleFiles={state.uploadNewFiles} multiple />
-                </div>
-                {/* <div style={{ marginRight: '32px', display: 'inline-block' }}>
-                  <VideoUploadButton handleFiles={state.uploadNewFiles} multiple />
-                </div> */}
-                <EmojiPicker onSelect={state.onSelectEmoji} emojiData={emojiData} i18n={emojiI18n} />
-                {FooterItem}
-              </div>
-
-              <Button type="submit" buttonStyle="primary" loading={state.submitting} disabled={!state.canSubmit()}>
-                {t('Post')}
-              </Button>
-            </div>
-            <span className="upload-hint">Browse, drag & drop, or paste a flight track (.igc) file or url</span>
-          </PanelFooter>
         </ImageDropzone>
       </form>
     </Panel>

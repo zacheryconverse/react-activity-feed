@@ -34,6 +34,7 @@ const getApiUrl = (): string | null => {
 };
 
 const IMAGE_PROCESS_API_URL: string | null = getApiUrl();
+console.log('[AttachedActivity] Configured IMAGE_PROCESS_API_URL:', IMAGE_PROCESS_API_URL);
 
 export function AttachedActivity<UT extends DefaultUT = DefaultUT, AT extends DefaultAT = DefaultAT>({
   activity: { object, verb, attachments, actor },
@@ -45,42 +46,65 @@ export function AttachedActivity<UT extends DefaultUT = DefaultUT, AT extends De
 
   const [processedUrls, setProcessedUrls] = useState<ProcessedUrlMap>({});
 
+  console.log('[AttachedActivity] Rendering. Original images count:', originalImages.length);
+
   useEffect(() => {
+    console.log(
+      '[AttachedActivity] useEffect triggered. Original images stringified:',
+      JSON.stringify(originalImages),
+      'API URL:',
+      IMAGE_PROCESS_API_URL,
+    );
     if (originalImages.length === 0 || !IMAGE_PROCESS_API_URL) {
       if (!IMAGE_PROCESS_API_URL && originalImages.length > 0 && process.env.NODE_ENV !== 'production') {
-        console.warn(
-          '[AttachedActivity] Skipping image processing because API_URL is not configured (see previous error).',
-        );
+        console.warn('[AttachedActivity] Skipping image processing: API_URL is not configured.');
+      }
+      if (originalImages.length === 0) {
+        console.log('[AttachedActivity] Skipping image processing: No original images.');
       }
       return;
     }
 
+    console.log('[AttachedActivity] Proceeding to fetch processed URLs.');
     const fetchProcessedUrls = async () => {
+      console.time('[AttachedActivity] fetchProcessedUrls Execution Time');
       const promises = originalImages.map(async (imageUrl) => {
+        console.log(`[AttachedActivity] Preparing to process image: ${imageUrl}`);
+        console.time(`[AttachedActivity] Processing Time for ${imageUrl}`);
+        const requestBody = {
+          imageUrl,
+          w: 50,
+          h: 50,
+          resize: 'crop',
+        };
         try {
+          console.log(`[AttachedActivity] Fetching from ${IMAGE_PROCESS_API_URL} with body:`, requestBody);
           const response = await fetch(IMAGE_PROCESS_API_URL, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
+              // TODO: Add Authorization header if your endpoint is protected
+              // 'Authorization': `Bearer ${your_auth_token_logic}`
             },
-            body: JSON.stringify({
-              imageUrl,
-              w: 50,
-              h: 50,
-              resize: 'crop',
-            }),
+            body: JSON.stringify(requestBody),
           });
 
           if (!response.ok) {
-            console.error(`Failed to process image ${imageUrl}: ${response.statusText}`);
+            const errorText = await response.text();
+            console.error(
+              `[AttachedActivity] Failed to process image ${imageUrl}. Status: ${response.status}, Response: ${errorText}`,
+            );
             return { originalUrl: imageUrl, processedUrl: null };
           }
 
           const data = await response.json();
+          console.log(`[AttachedActivity] Successfully processed ${imageUrl}. Response data:`, data);
           return { originalUrl: imageUrl, processedUrl: data.processedUrl };
         } catch (error) {
-          console.error(`Error fetching processed URL for ${imageUrl}:`, error);
+          console.error(`[AttachedActivity] Network error or JSON parsing error for ${imageUrl}:`, error);
           return { originalUrl: imageUrl, processedUrl: null };
+        } finally {
+          console.timeEnd(`[AttachedActivity] Processing Time for ${imageUrl}`);
         }
       });
 
@@ -91,7 +115,9 @@ export function AttachedActivity<UT extends DefaultUT = DefaultUT, AT extends De
           finalUrls[result.originalUrl] = result.processedUrl;
         }
       });
+      console.log('[AttachedActivity] Setting processed URLs:', finalUrls);
       setProcessedUrls((prev) => ({ ...prev, ...finalUrls }));
+      console.timeEnd('[AttachedActivity] fetchProcessedUrls Execution Time');
     };
 
     fetchProcessedUrls();
@@ -105,6 +131,7 @@ export function AttachedActivity<UT extends DefaultUT = DefaultUT, AT extends De
         <div className="raf-attached-activity__images">
           {originalImages.map((image, i) => {
             const displayUrl = processedUrls[image] || image;
+            // console.log(`[AttachedActivity] Rendering thumbnail for ${image}, displayUrl: ${displayUrl}`)
             return <Thumbnail image={displayUrl} size={50} key={`image-${i}`} />;
           })}
         </div>

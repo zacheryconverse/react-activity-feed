@@ -31,11 +31,42 @@ export const parseIgcFile = (igcFileContent: string): FlightData | null => {
   }
 };
 
+export const extractIgcCompetitionClass = (igcContent: string): string | null => {
+  if (!igcContent || typeof igcContent !== 'string') return null;
+  const lines = igcContent.split(/\r?\n/);
+  for (const line of lines) {
+    if (/^HFCCLCOMPETITIONCLASS:/i.test(line)) {
+      const match = line.match(/^HFCCLCOMPETITIONCLASS:\s*(.+)/i);
+      if (match) return match[1].trim();
+    }
+    if (/^HSCCLCOMPETITION\s*CLASS:/i.test(line) || /^HOCCLCOMPETITION\s*CLASS:/i.test(line)) {
+      const match = line.match(/^H[SO]CCLCOMPETITION\s*CLASS:\s*(.+)/i);
+      if (match) return match[1].trim();
+    }
+  }
+  return null;
+};
+
+export const normalizeCompetitionClass = (value?: string | null): string | null => {
+  if (!value || typeof value !== 'string') return null;
+  const cleaned = value
+    .trim()
+    .toLowerCase()
+    .replace(/\s*\([^)]*\)\s*/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+  return cleaned || null;
+};
+
 export interface FlightStatistics {
   avgSpeed: number;
+  avgRouteSpeed?: number;
   classification: string;
+  competitionClass?: string;
+  category?: string;
   date: Date;
   flightDuration: string;
+  duration_s?: number;
   freeDistance: number;
   freeDistanceAvgSpeed: number;
   freeLegDetails: LegDetail[];
@@ -45,6 +76,7 @@ export interface FlightStatistics {
   maxClimb: number;
   maxSink: number;
   maxSpeed: number;
+  multiplier?: number;
   pilot: string;
   points: Point[];
   regions: string[];
@@ -155,7 +187,10 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
-export const extractFlightStatistics = (result: Result): FlightStatistics | null => {
+export const extractFlightStatistics = (
+  result: Result,
+  options: { competitionClass?: string | null; category?: string | null } = {},
+): FlightStatistics | null => {
   const { scoreInfo, opt } = result;
   const { distance, score, tp, legs, ep, cp } = scoreInfo;
   const { flight, scoring } = opt;
@@ -374,6 +409,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
   const routeDistance = score / scoring?.multiplier;
   const avgRouteSpeed = (routeDistance / turnpointsDurationInHours).toFixed(2);
   const freeDistanceAvgSpeed = totalPointsDistance / (flightDurationSeconds / 3600);
+  const multiplier = scoring?.multiplier || (score && routeDistance ? score / routeDistance : null);
 
   return {
     points,
@@ -381,6 +417,8 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     date,
     site,
     classification: opt.scoring.name,
+    competitionClass: options.competitionClass || null,
+    category: options.category || null,
     score,
     routeDistance,
     distance,
@@ -389,6 +427,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     routeLegDetails,
     freeLegDetails,
     flightDuration,
+    duration_s: Math.round(flightDurationSeconds),
     freeDistance: parseFloat(totalPointsDistance.toFixed(2)),
     totalLegDistance: parseFloat(totalLegDistance.toFixed(2)),
     freeDistanceAvgSpeed: parseFloat(freeDistanceAvgSpeed).toFixed(2),
@@ -398,6 +437,7 @@ export const extractFlightStatistics = (result: Result): FlightStatistics | null
     maxAltitude,
     maxAltitudeGain,
     gliderType,
+    multiplier: multiplier || undefined,
     totalDistance,
     regions: Array.from(regionsForFlight),
   };

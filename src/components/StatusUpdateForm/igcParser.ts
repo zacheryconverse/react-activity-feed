@@ -35,12 +35,8 @@ export const extractIgcCompetitionClass = (igcContent: string): string | null =>
   if (!igcContent || typeof igcContent !== 'string') return null;
   const lines = igcContent.split(/\r?\n/);
   for (const line of lines) {
-    if (/^HFCCLCOMPETITIONCLASS:/i.test(line)) {
-      const match = line.match(/^HFCCLCOMPETITIONCLASS:\s*(.+)/i);
-      if (match) return match[1].trim();
-    }
-    if (/^HSCCLCOMPETITION\s*CLASS:/i.test(line) || /^HOCCLCOMPETITION\s*CLASS:/i.test(line)) {
-      const match = line.match(/^H[SO]CCLCOMPETITION\s*CLASS:\s*(.+)/i);
+    if (/^H[FSO]CCLCOMPETITION\s*CLASS:/i.test(line)) {
+      const match = line.match(/^H[FSO]CCLCOMPETITION\s*CLASS:\s*(.+)/i);
       if (match) return match[1].trim();
     }
   }
@@ -84,6 +80,7 @@ export interface FlightStatistics {
   avgRouteSpeed?: number;
   category?: string;
   competitionClass?: string;
+  country?: string;
   duration_s?: number;
   multiplier?: number;
 }
@@ -187,65 +184,8 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
-export const extractFlightStatistics = (
-  result: Result,
-  options: { category?: string | null; competitionClass?: string | null } = {},
-): FlightStatistics | null => {
-  const { scoreInfo, opt } = result;
-  const { distance, score, tp, legs, ep, cp } = scoreInfo;
-  const { flight, scoring } = opt;
-  const { pilot, gliderType, site, date, fixes } = flight;
-
-  const launchTime = fixes[0].timestamp;
-  const landingTime = fixes[fixes.length - 1].timestamp;
-  const flightDurationSeconds = (landingTime - launchTime) / 1000;
-  const flightDuration = formatDuration(flightDurationSeconds);
-
-  const maxAltitude = Math.max(...fixes.map((fix) => fix.gpsAltitude));
-  const { maxAltitudeGain, totalDistance } = calculateMaxAltitudeGainAndDistance(fixes);
-
-  const turnpointsDuration =
-    (ep ? fixes[ep.finish.r].timestamp - fixes[ep.start.r].timestamp : 0) ||
-    (cp ? fixes[cp.out.r].timestamp - fixes[cp.in.r].timestamp : 0);
-  const turnpointsDurationInHours = turnpointsDuration / 3600000;
-
-  const { maxClimb, maxSink } = calculateMaxRates(
-    fixes.map((fix) => fix.gpsAltitude),
-    fixes.map((fix) => fix.timestamp),
-  );
-
-  const startPoint = fixes[0];
-  const endPoint = fixes[fixes.length - 1];
-  const totalLegDistance = calculateTotalLegDistance(startPoint, endPoint, tp, legs);
-
-  const routeLegDetails: LegDetail[] = [];
-  const freeLegDetails: LegDetail[] = [];
-  let previousPoint = { ...startPoint, r: startPoint.timestamp };
-
-  const addLegDetails = (length: number, array: LegDetail[], totalDistance: number) => {
-    const legPercentOfRoute = (length / totalDistance) * 100;
-    array.push({
-      length: length.toFixed(2),
-      percentOfRoute: legPercentOfRoute.toFixed(2),
-    });
-  };
-
-  let legDistance = haversineDistance(previousPoint.latitude, previousPoint.longitude, tp[0].y, tp[0].x);
-  addLegDetails(legDistance, freeLegDetails, totalLegDistance);
-  previousPoint = tp[0];
-
-  legs.forEach((leg) => {
-    legDistance = leg.d;
-    addLegDetails(legDistance, routeLegDetails, distance);
-    addLegDetails(legDistance, freeLegDetails, totalLegDistance);
-    previousPoint = leg.finish;
-  });
-
-  legDistance = haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
-  addLegDetails(legDistance, freeLegDetails, totalLegDistance);
-
+const calculateMaxSpeed = (fixes: Fix[], windowSize: number): number => {
   let maxSpeed = -Infinity;
-  const windowSize = 15;
 
   for (let i = 0; i <= fixes.length - windowSize; i++) {
     let windowDistance = 0;
@@ -262,13 +202,21 @@ export const extractFlightStatistics = (
     }
 
     const windowSpeed = windowDistance / (windowTime / 3600);
-
     if (windowSpeed > maxSpeed) {
       maxSpeed = windowSpeed;
     }
   }
 
-  const points = [];
+  return maxSpeed;
+};
+
+const buildFlightPoints = (
+  fixes: Fix[],
+  tp: { r: number; x: number; y: number }[],
+  cp: { in?: { r: number; x: number; y: number }; out?: { r: number; x: number; y: number } } | undefined,
+  ep: { finish?: { r: number; x: number; y: number }; start?: { r: number; x: number; y: number } } | undefined,
+): Point[] => {
+  const points: Point[] = [];
 
   points.push({
     label: 'First Fix',
@@ -332,19 +280,116 @@ export const extractFlightStatistics = (
     time: fixes[fixes.length - 1].time,
   });
 
+  return points;
+};
+
+const processRegionsAndCountry = (
+  points: Point[],
+  regions: { name: string; polygon: Feature<Polygon> }[],
+): { flightCountryCode: string | null; regionsForFlight: Set<string> } => {
+  const regionsForFlight = new Set<string>();
+  const reverseGeocode = country_reverse_geocoding();
+  let flightCountryCode: string | null = null;
+
+  const isPointInRegion = (
+    latitude: number,
+    longitude: number,
+    region: { name: string; polygon: Feature<Polygon> },
+  ) => {
+    try {
+      const pt = point([longitude, latitude]);
+      return booleanPointInPolygon(pt, region.polygon);
+    } catch (error) {
+      console.error(`Error checking point in region ${region.name}:`, error);
+      return false;
+    }
+  };
+
+  points.forEach((point) => {
+    const country = reverseGeocode.get_country(point.latitude, point.longitude);
+    const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
+
+    if (!flightCountryCode && country?.code && typeof country.code === 'string') {
+      flightCountryCode = country.code.toUpperCase();
+    }
+
+    if (country && !regionsForFlight.has(formattedCountry)) {
+      regionsForFlight.add(formattedCountry);
+      console.log('Country:', country.name, formattedCountry);
+    }
+
+    regions.forEach((region) => {
+      if (isPointInRegion(point.latitude, point.longitude, region)) {
+        regionsForFlight.add(region.name);
+      }
+    });
+  });
+
+  console.log('regionsForFlight:', regionsForFlight);
+  return { regionsForFlight, flightCountryCode };
+};
+
+export const extractFlightStatistics = (
+  result: Result,
+  options: { category?: string | null; competitionClass?: string | null } = {},
+): FlightStatistics | null => {
+  const { scoreInfo, opt } = result;
+  const { distance, score, tp, legs, ep, cp } = scoreInfo;
+  const { flight, scoring } = opt;
+  const { pilot, gliderType, site, date, fixes } = flight;
+
+  const launchTime = fixes[0].timestamp;
+  const landingTime = fixes[fixes.length - 1].timestamp;
+  const flightDurationSeconds = (landingTime - launchTime) / 1000;
+  const flightDuration = formatDuration(flightDurationSeconds);
+
+  const maxAltitude = Math.max(...fixes.map((fix) => fix.gpsAltitude));
+  const { maxAltitudeGain, totalDistance } = calculateMaxAltitudeGainAndDistance(fixes);
+
+  const turnpointsDuration =
+    (ep ? fixes[ep.finish.r].timestamp - fixes[ep.start.r].timestamp : 0) ||
+    (cp ? fixes[cp.out.r].timestamp - fixes[cp.in.r].timestamp : 0);
+  const turnpointsDurationInHours = turnpointsDuration / 3600000;
+
+  const { maxClimb, maxSink } = calculateMaxRates(
+    fixes.map((fix) => fix.gpsAltitude),
+    fixes.map((fix) => fix.timestamp),
+  );
+
+  const startPoint = fixes[0];
+  const endPoint = fixes[fixes.length - 1];
+  const totalLegDistance = calculateTotalLegDistance(startPoint, endPoint, tp, legs);
+
+  const routeLegDetails: LegDetail[] = [];
+  const freeLegDetails: LegDetail[] = [];
+  let previousPoint = { ...startPoint, r: startPoint.timestamp };
+
+  const addLegDetails = (length: number, array: LegDetail[], totalDistance: number) => {
+    const legPercentOfRoute = (length / totalDistance) * 100;
+    array.push({
+      length: length.toFixed(2),
+      percentOfRoute: legPercentOfRoute.toFixed(2),
+    });
+  };
+
+  let legDistance = haversineDistance(previousPoint.latitude, previousPoint.longitude, tp[0].y, tp[0].x);
+  addLegDetails(legDistance, freeLegDetails, totalLegDistance);
+  previousPoint = tp[0];
+
+  legs.forEach((leg) => {
+    legDistance = leg.d;
+    addLegDetails(legDistance, routeLegDetails, distance);
+    addLegDetails(legDistance, freeLegDetails, totalLegDistance);
+    previousPoint = leg.finish;
+  });
+
+  legDistance = haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
+  addLegDetails(legDistance, freeLegDetails, totalLegDistance);
+
+  const maxSpeed = calculateMaxSpeed(fixes, 15);
+  const points = buildFlightPoints(fixes, tp, cp, ep);
+
   const regions: { name: string; polygon: Feature<Polygon> }[] = [
-    // {
-    //   name: 'mexico',
-    //   polygon: polygon([
-    //     [
-    //       [-117.0, 14.5],
-    //       [-117.0, 29.5],
-    //       [-86.5, 29.5],
-    //       [-86.5, 14.5],
-    //       [-117.0, 14.5],
-    //     ],
-    //   ]),
-    // },
     {
       name: 'alps',
       polygon: polygon([
@@ -362,39 +407,7 @@ export const extractFlightStatistics = (
     },
   ];
 
-  const isPointInRegion = (
-    latitude: number,
-    longitude: number,
-    region: { name: string; polygon: Feature<Polygon> },
-  ) => {
-    try {
-      const pt = point([longitude, latitude]);
-      return booleanPointInPolygon(pt, region.polygon);
-    } catch (error) {
-      console.error(`Error checking point in region ${region.name}:`, error);
-      return false;
-    }
-  };
-
-  const regionsForFlight = new Set<string>();
-  const reverseGeocode = country_reverse_geocoding();
-
-  points.forEach((point) => {
-    const country = reverseGeocode.get_country(point.latitude, point.longitude);
-    const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
-
-    if (country && !regionsForFlight.has(formattedCountry)) {
-      regionsForFlight.add(formattedCountry);
-      console.log('Country:', country.name, formattedCountry);
-    }
-
-    regions.forEach((region) => {
-      if (isPointInRegion(point.latitude, point.longitude, region)) {
-        regionsForFlight.add(region.name);
-      }
-    });
-  });
-  console.log('regionsForFlight:', regionsForFlight);
+  const { regionsForFlight, flightCountryCode } = processRegionsAndCountry(points, regions);
 
   let totalPointsDistance = 0;
   for (let i = 0; i < points.length - 1; i++) {
@@ -440,5 +453,6 @@ export const extractFlightStatistics = (
     multiplier: multiplier || undefined,
     totalDistance,
     regions: Array.from(regionsForFlight),
+    country: flightCountryCode,
   };
 };

@@ -60,13 +60,9 @@ export const normalizeCompetitionClass = (value?: string | null): string | null 
 
 export interface FlightStatistics {
   avgSpeed: number;
-  avgRouteSpeed?: number;
   classification: string;
-  competitionClass?: string;
-  category?: string;
   date: Date;
   flightDuration: string;
-  duration_s?: number;
   freeDistance: number;
   freeDistanceAvgSpeed: number;
   freeLegDetails: LegDetail[];
@@ -76,7 +72,6 @@ export interface FlightStatistics {
   maxClimb: number;
   maxSink: number;
   maxSpeed: number;
-  multiplier?: number;
   pilot: string;
   points: Point[];
   regions: string[];
@@ -86,6 +81,11 @@ export interface FlightStatistics {
   score: number;
   site: string;
   totalDistance: number;
+  avgRouteSpeed?: number;
+  category?: string;
+  competitionClass?: string;
+  duration_s?: number;
+  multiplier?: number;
 }
 
 interface Point {
@@ -189,7 +189,7 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
 
 export const extractFlightStatistics = (
   result: Result,
-  options: { competitionClass?: string | null; category?: string | null } = {},
+  options: { category?: string | null; competitionClass?: string | null } = {},
 ): FlightStatistics | null => {
   const { scoreInfo, opt } = result;
   const { distance, score, tp, legs, ep, cp } = scoreInfo;

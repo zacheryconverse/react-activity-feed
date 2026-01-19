@@ -23,13 +23,7 @@ import { solver, scoringRules } from 'igc-xc-score';
 
 import { DefaultAT, DefaultUT, useStreamContext } from '../../context';
 import { StatusUpdateFormProps } from './StatusUpdateForm';
-import {
-  parseIgcFile,
-  extractFlightStatistics,
-  extractIgcCompetitionClass,
-  normalizeCompetitionClass,
-  FlightStatistics,
-} from './igcParser';
+import { parseIgcFile, extractFlightStatistics, extractIgcCompetitionClass, FlightStatistics } from './igcParser';
 import {
   generateRandomId,
   dataTransferItemsToFiles,
@@ -298,12 +292,10 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         }
 
         const competitionClass = extractIgcCompetitionClass(igcContent);
-        const category = normalizeCompetitionClass(competitionClass) || 'unknown';
         const result = solver(igcData, scoringRules.XContest).next().value;
         // console.log('result', result);
         const flightStats = extractFlightStatistics(result, {
           competitionClass,
-          category,
         });
         const url = await client.files.upload(file);
         console.log('Flight Statistics:', flightStats);

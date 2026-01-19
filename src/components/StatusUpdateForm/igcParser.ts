@@ -43,17 +43,6 @@ export const extractIgcCompetitionClass = (igcContent: string): string | null =>
   return null;
 };
 
-export const normalizeCompetitionClass = (value?: string | null): string | null => {
-  if (!value || typeof value !== 'string') return null;
-  const cleaned = value
-    .trim()
-    .toLowerCase()
-    .replace(/\s*\([^)]*\)\s*/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-  return cleaned || null;
-};
-
 export interface FlightStatistics {
   avgSpeed: number;
   classification: string;
@@ -78,11 +67,11 @@ export interface FlightStatistics {
   site: string;
   totalDistance: number;
   avgRouteSpeed?: number;
-  category?: string;
   competitionClass?: string;
   country?: string;
   duration_s?: number;
   multiplier?: number;
+  wingClass?: string;
 }
 
 interface Point {
@@ -96,6 +85,29 @@ interface Point {
 interface LegDetail {
   length: string;
   percentOfRoute: string;
+}
+
+interface TurnpointRef {
+  r: number;
+  x: number;
+  y: number;
+}
+
+interface EpRef {
+  finish?: TurnpointRef;
+  start?: TurnpointRef;
+}
+
+interface CpRef {
+  in?: TurnpointRef;
+  out?: TurnpointRef;
+}
+
+interface FlightPoint {
+  label: string;
+  latitude: number;
+  longitude: number;
+  time: string;
 }
 
 const formatDuration = (seconds: number) => {
@@ -184,7 +196,17 @@ const haversineDistance = (lat1: number, lon1: number, lat2: number, lon2: numbe
   return R * c;
 };
 
-const calculateMaxSpeed = (fixes: Fix[], windowSize: number): number => {
+const isPointInRegion = (latitude: number, longitude: number, region: { name: string; polygon: Feature<Polygon> }) => {
+  try {
+    const pt = point([longitude, latitude]);
+    return booleanPointInPolygon(pt, region.polygon);
+  } catch (error) {
+    console.error(`Error checking point in region ${region.name}:`, error);
+    return false;
+  }
+};
+
+const calculateMaxSpeed = (fixes: Fix[], windowSize = 15): number => {
   let maxSpeed = -Infinity;
 
   for (let i = 0; i <= fixes.length - windowSize; i++) {
@@ -202,6 +224,7 @@ const calculateMaxSpeed = (fixes: Fix[], windowSize: number): number => {
     }
 
     const windowSpeed = windowDistance / (windowTime / 3600);
+
     if (windowSpeed > maxSpeed) {
       maxSpeed = windowSpeed;
     }
@@ -210,13 +233,21 @@ const calculateMaxSpeed = (fixes: Fix[], windowSize: number): number => {
   return maxSpeed;
 };
 
+const createLegDetail = (length: number, totalDistance: number): LegDetail => {
+  const legPercentOfRoute = (length / totalDistance) * 100;
+  return {
+    length: length.toFixed(2),
+    percentOfRoute: legPercentOfRoute.toFixed(2),
+  };
+};
+
 const buildFlightPoints = (
   fixes: Fix[],
-  tp: { r: number; x: number; y: number }[],
-  cp: { in?: { r: number; x: number; y: number }; out?: { r: number; x: number; y: number } } | undefined,
-  ep: { finish?: { r: number; x: number; y: number }; start?: { r: number; x: number; y: number } } | undefined,
-): Point[] => {
-  const points: Point[] = [];
+  tp: TurnpointRef[] = [],
+  cp?: CpRef | null,
+  ep?: EpRef | null,
+): FlightPoint[] => {
+  const points: FlightPoint[] = [];
 
   points.push({
     label: 'First Fix',
@@ -283,27 +314,10 @@ const buildFlightPoints = (
   return points;
 };
 
-const processRegionsAndCountry = (
-  points: Point[],
-  regions: { name: string; polygon: Feature<Polygon> }[],
-): { flightCountryCode: string | null; regionsForFlight: Set<string> } => {
+const determineRegionsForFlight = (points: FlightPoint[], regions: { name: string; polygon: Feature<Polygon> }[]) => {
   const regionsForFlight = new Set<string>();
   const reverseGeocode = country_reverse_geocoding();
   let flightCountryCode: string | null = null;
-
-  const isPointInRegion = (
-    latitude: number,
-    longitude: number,
-    region: { name: string; polygon: Feature<Polygon> },
-  ) => {
-    try {
-      const pt = point([longitude, latitude]);
-      return booleanPointInPolygon(pt, region.polygon);
-    } catch (error) {
-      console.error(`Error checking point in region ${region.name}:`, error);
-      return false;
-    }
-  };
 
   points.forEach((point) => {
     const country = reverseGeocode.get_country(point.latitude, point.longitude);
@@ -326,12 +340,13 @@ const processRegionsAndCountry = (
   });
 
   console.log('regionsForFlight:', regionsForFlight);
+
   return { regionsForFlight, flightCountryCode };
 };
 
 export const extractFlightStatistics = (
   result: Result,
-  options: { category?: string | null; competitionClass?: string | null } = {},
+  options: { competitionClass?: string | null; wingClass?: string | null } = {},
 ): FlightStatistics | null => {
   const { scoreInfo, opt } = result;
   const { distance, score, tp, legs, ep, cp } = scoreInfo;
@@ -364,29 +379,22 @@ export const extractFlightStatistics = (
   const freeLegDetails: LegDetail[] = [];
   let previousPoint = { ...startPoint, r: startPoint.timestamp };
 
-  const addLegDetails = (length: number, array: LegDetail[], totalDistance: number) => {
-    const legPercentOfRoute = (length / totalDistance) * 100;
-    array.push({
-      length: length.toFixed(2),
-      percentOfRoute: legPercentOfRoute.toFixed(2),
-    });
-  };
-
   let legDistance = haversineDistance(previousPoint.latitude, previousPoint.longitude, tp[0].y, tp[0].x);
-  addLegDetails(legDistance, freeLegDetails, totalLegDistance);
+  freeLegDetails.push(createLegDetail(legDistance, totalLegDistance));
   previousPoint = tp[0];
 
   legs.forEach((leg) => {
     legDistance = leg.d;
-    addLegDetails(legDistance, routeLegDetails, distance);
-    addLegDetails(legDistance, freeLegDetails, totalLegDistance);
+    routeLegDetails.push(createLegDetail(legDistance, distance));
+    freeLegDetails.push(createLegDetail(legDistance, totalLegDistance));
     previousPoint = leg.finish;
   });
 
   legDistance = haversineDistance(previousPoint.y, previousPoint.x, endPoint.latitude, endPoint.longitude);
-  addLegDetails(legDistance, freeLegDetails, totalLegDistance);
+  freeLegDetails.push(createLegDetail(legDistance, totalLegDistance));
 
-  const maxSpeed = calculateMaxSpeed(fixes, 15);
+  const maxSpeed = calculateMaxSpeed(fixes);
+
   const points = buildFlightPoints(fixes, tp, cp, ep);
 
   const regions: { name: string; polygon: Feature<Polygon> }[] = [
@@ -407,7 +415,7 @@ export const extractFlightStatistics = (
     },
   ];
 
-  const { regionsForFlight, flightCountryCode } = processRegionsAndCountry(points, regions);
+  const { regionsForFlight, flightCountryCode } = determineRegionsForFlight(points, regions);
 
   let totalPointsDistance = 0;
   for (let i = 0; i < points.length - 1; i++) {
@@ -431,7 +439,7 @@ export const extractFlightStatistics = (
     site,
     classification: opt.scoring.name,
     competitionClass: options.competitionClass || null,
-    category: options.category || null,
+    wingClass: options.wingClass || null,
     score,
     routeDistance,
     distance,

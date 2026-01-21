@@ -12,6 +12,7 @@ export type CardProps = PropsWithElementAttributes<
     image?: string | null;
     nolink?: boolean;
     onImageError?: (event: React.SyntheticEvent<HTMLImageElement, Event>) => void;
+    score?: number;
   } & Pick<OGAPIResponse, 'description' | 'images' | 'url' | 'title'>,
   HTMLAnchorElement
 >;
@@ -28,6 +29,7 @@ export const Card = ({
   className,
   style,
   onImageError,
+  score,
 }: CardProps) => {
   const sanitizedURL = useMemo(() => sanitizeURL(url), [url]);
   const trimmedURL = useMemo(() => trimURL(sanitizedURL), [sanitizedURL]);
@@ -58,7 +60,14 @@ export const Card = ({
       )}
       <div className="raf-card__content">
         <div className="raf-card__content-left">
-          <p className="raf-card__title">{title}</p>
+          <p className="raf-card__title">
+            {title}
+            {score !== undefined && score !== null && (
+              <span style={{ marginLeft: '8px', fontSize: '0.9em', color: '#aaa', fontWeight: 'normal' }}>
+                • {Math.floor(score)} pts
+              </span>
+            )}
+          </p>
           <p className="raf-card__url">{trimmedURL}</p>
           <p className="raf-card__description">{description}</p>
         </div>

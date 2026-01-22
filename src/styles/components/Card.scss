@@ -23,6 +23,30 @@
   display: flex;
   justify-content: flex-end;
   align-items: flex-start;
+  background: #0f0f0f;
+  overflow: hidden;
+
+  &::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(110deg, #101010 0%, #1b1b1b 45%, #101010 100%);
+    background-size: 200% 100%;
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  &.raf-card__image--loading::before {
+    opacity: 1;
+    animation: raf-card-shimmer 1.6s ease infinite;
+  }
+
+  &.raf-card__image--loaded::before {
+    opacity: 0;
+    animation: none;
+  }
 
   & > .raf-icon-button {
     margin: 16px;
@@ -36,6 +60,26 @@
   height: inherit;
   object-fit: cover;
   border-radius: 10px;
+  z-index: 1;
+}
+
+.raf-card__image img {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.raf-card__image--loaded img {
+  opacity: 1;
+}
+
+@keyframes raf-card-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .raf-card__content {

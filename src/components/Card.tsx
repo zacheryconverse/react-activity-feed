@@ -1,4 +1,4 @@
-import React, { SyntheticEvent, useMemo } from 'react';
+import React, { SyntheticEvent, useMemo, useEffect, useState, useCallback } from 'react';
 import { IconButton } from 'react-file-utils';
 import { OGAPIResponse } from 'getstream';
 
@@ -33,6 +33,22 @@ export const Card = ({
   const trimmedURL = useMemo(() => trimURL(sanitizedURL), [sanitizedURL]);
 
   const [{ image }] = !imageURL && images.length ? images : [{ image: imageURL }];
+  const [isImageLoaded, setIsImageLoaded] = useState(image === null);
+
+  useEffect(() => {
+    setIsImageLoaded(image === null);
+  }, [image]);
+
+  const handleImageLoad = useCallback(() => {
+    setIsImageLoaded(true);
+  }, []);
+
+  const handleImageError = useCallback(
+    (event: React.SyntheticEvent<HTMLImageElement, Event>) => {
+      onImageError?.(event);
+    },
+    [onImageError],
+  );
 
   return (
     <a
@@ -48,11 +64,18 @@ export const Card = ({
         </IconButton>
       ) : null}
       {image !== undefined && (
-        <div className="raf-card__image">
+        <div className={`raf-card__image ${isImageLoaded ? 'raf-card__image--loaded' : 'raf-card__image--loading'}`}>
           {image === null ? (
             <AvatarIcon preserveAspectRatio="xMinYMin slice" />
           ) : (
-            <img src={image} alt={alt || title || description || ''} onError={onImageError} />
+            <img
+              src={image}
+              alt={alt || title || description || ''}
+              onLoad={handleImageLoad}
+              onError={handleImageError}
+              loading="lazy"
+              decoding="async"
+            />
           )}
         </div>
       )}

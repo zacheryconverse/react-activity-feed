@@ -34,9 +34,19 @@ export const Card = ({
 
   const [{ image }] = !imageURL && images.length ? images : [{ image: imageURL }];
   const [isImageLoaded, setIsImageLoaded] = useState(image === null);
+  const imageRef = React.useRef<HTMLImageElement | null>(null);
 
   useEffect(() => {
-    setIsImageLoaded(image === null);
+    if (image === null) {
+      setIsImageLoaded(true);
+      return;
+    }
+
+    if (imageRef.current?.complete && imageRef.current?.naturalWidth > 0) {
+      setIsImageLoaded(true);
+    } else {
+      setIsImageLoaded(false);
+    }
   }, [image]);
 
   const handleImageLoad = useCallback(() => {
@@ -69,6 +79,7 @@ export const Card = ({
             <AvatarIcon preserveAspectRatio="xMinYMin slice" />
           ) : (
             <img
+              ref={imageRef}
               src={image}
               alt={alt || title || description || ''}
               onLoad={handleImageLoad}

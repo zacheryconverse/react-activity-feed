@@ -1,0 +1,9 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["src/**/*.spec.ts", "src/**/*.spec.tsx", "src/**/*.test.ts", "src/**/*.test.tsx"],
+  "exclude": ["node_modules", "src/gatsby-theme-docz"],
+  "compilerOptions": {
+    "noEmit": true,
+    "types": ["jest", "node"]
+  }
+}

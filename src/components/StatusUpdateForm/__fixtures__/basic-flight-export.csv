@@ -1,0 +1,4 @@
+date,start_time,end_time,distance_km,max_altitude,takeoff,landing,pilot,route_type,igc_file_name
+2025-01-02,10:00:00,11:30:00,85.2,2450,Tekoa,Valley,Pilot One,free_flight,track-a.igc
+03/01/2025,09:15,10:05,42.5,2200,Wonderland,Town,Pilot Two,fai_triangle,
+,09:00,09:30,12.0,1500,Test,Test,Pilot Three,free_flight,

@@ -1,4 +1,4 @@
-import React, { ReactNode } from 'react';
+import React, { ReactNode, useEffect, useRef } from 'react';
 import { Activity, NewActivity, UR } from 'getstream';
 import {
   FilePreviewer,
@@ -14,6 +14,7 @@ import {
 import { DefaultAT, DefaultUT, useTranslationContext } from '../../context';
 import { ElementOrComponentOrLiteralType, PropsWithElementAttributes, smartRender } from '../../utils';
 import { useStatusUpdateForm } from './useStatusUpdateForm';
+import { FlightImportPreview } from './FlightImportPreview';
 // import VideoPreviewer from './VideoPreviewer';
 // import VideoUploadButton from './VideoUploadButton';
 import { Panel, PanelContent, PanelFooter, PanelHeading } from '../Panel';
@@ -103,6 +104,38 @@ export function StatusUpdateForm<
     userId,
     onSuccess,
   });
+  const directoryInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (directoryInputRef.current) {
+      directoryInputRef.current.setAttribute('webkitdirectory', '');
+      directoryInputRef.current.setAttribute('directory', '');
+    }
+  }, []);
+
+  const handleDirectorySelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const { files } = event.target;
+    if (files && files.length) {
+      state.uploadNewFiles(Array.from(files));
+    }
+    event.target.value = '';
+  };
+
+  const handleRemoveImport = (id: string) => {
+    if (state.igcs?.data?.[id]) {
+      state.removeIgc(id);
+      return;
+    }
+    if (state.csvRows?.data?.[id]) {
+      state.removeCsvRow(id);
+    }
+  };
+
+  const handleRetryImport = (id: string) => {
+    if (state.igcs?.data?.[id]) {
+      state.uploadIgc(id, state.igcs.data[id]);
+    }
+  };
 
   return (
     <Panel style={style} className={className}>
@@ -114,6 +147,11 @@ export function StatusUpdateForm<
             {state.uploadError && (
               <div style={{ color: 'red' }} className="error-message">
                 {state.uploadError}
+              </div>
+            )}
+            {state.sourceError && (
+              <div style={{ color: 'red' }} className="error-message">
+                {state.sourceError}
               </div>
             )}
             <div style={{ display: 'flex' }}>
@@ -138,11 +176,32 @@ export function StatusUpdateForm<
               <div style={{ display: 'flex' }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ marginRight: '32px', display: 'inline-block' }}>
-                    <FileUploadButton handleFiles={state.uploadNewFiles} accepts=".icg,.IGC">
+                    <FileUploadButton
+                      handleFiles={state.uploadNewFiles}
+                      accepts=".igc,.IGC,.csv,.CSV,.zip,.ZIP"
+                      multiple
+                    >
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" height="40px">
                         <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 11h-4v4h-2v-4H7v-2h4V7h2v4h4v2z"></path>
                       </svg>
                     </FileUploadButton>
+                  </div>
+                  <div style={{ marginRight: '32px', display: 'inline-block' }}>
+                    <button
+                      type="button"
+                      className="raf-button raf-button--reset"
+                      onClick={() => directoryInputRef.current?.click()}
+                    >
+                      Folder
+                    </button>
+                    <input
+                      ref={directoryInputRef}
+                      type="file"
+                      multiple
+                      className="rfu-file-input"
+                      style={{ display: 'none' }}
+                      onChange={handleDirectorySelect}
+                    />
                   </div>
                   <div style={{ marginRight: '32px', display: 'inline-block' }}>
                     <ImageUploadButton resetOnChange handleFiles={state.uploadNewFiles} multiple />
@@ -158,7 +217,9 @@ export function StatusUpdateForm<
                   {t('Post')}
                 </Button>
               </div>
-              <span className="upload-hint">Browse, drag & drop, or paste a flight track (.igc)</span>
+              <span className="upload-hint">
+                Browse, drag/drop, paste, or select a folder for .igc/.csv/.zip flight imports
+              </span>
             </PanelFooter>
 
             {state.isOgScraping && (
@@ -166,13 +227,26 @@ export function StatusUpdateForm<
                 <LoadingIndicator /> {t('Getting website data...')}
               </div>
             )}
-            {state.igcs.order.length > 0 && (
-              <FilePreviewer
-                uploads={state.igcs.order.map((id) => state.igcs.data[id]) as FileUpload[]}
-                handleRemove={state.removeIgc}
-                handleRetry={(id) => state.uploadIgc(id, state.igcs.data[id])}
-                handleFiles={state.uploadNewFiles}
+            {state.flightImportPreviewItems?.length > 0 && (
+              <FlightImportPreview
+                items={state.flightImportPreviewItems}
+                onRemove={handleRemoveImport}
+                onRetry={handleRetryImport}
+                onConfirm={state.confirmFlightImport}
+                showConfirm={state.showFlightImportConfirm}
+                confirmDisabled={state.confirmFlightImportDisabled}
+                confirmLabel={state.importingFlights ? 'Importing flights...' : 'Confirm import'}
+                possibleDuplicateOverrides={state.possibleDuplicateOverrides}
+                onTogglePossibleDuplicate={state.togglePossibleDuplicateOverride}
               />
+            )}
+            {state.flightImportSummary?.counts && (
+              <div className="raf-flight-import-preview__results">
+                Imported: {state.flightImportSummary.counts.imported || 0} · Duplicates skipped:{' '}
+                {state.flightImportSummary.counts.duplicateSkipped || 0} · Possible skipped:{' '}
+                {state.flightImportSummary.counts.possibleSkipped || 0} · Errors:{' '}
+                {state.flightImportSummary.counts.errors || 0}
+              </div>
             )}
             {state.activeOg && (
               <div style={{ margin: '8px 0' }}>

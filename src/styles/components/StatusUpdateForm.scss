@@ -57,3 +57,177 @@
     color: $fontColor;
   }
 }
+
+.raf-flight-import-preview {
+  border: 1px solid shade(#fafafa, 15%);
+  border-radius: $borderRadius;
+  margin: 12px 0;
+  overflow: hidden;
+  background: #fff;
+
+  &__header {
+    align-items: center;
+    border-bottom: 1px solid shade(#fafafa, 15%);
+    display: flex;
+    justify-content: space-between;
+    padding: 10px 12px;
+  }
+
+  &__title {
+    color: $fontColor;
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  &__counts {
+    color: tint($fontColor, 30%);
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
+  &__list {
+    list-style: none;
+    margin: 0;
+    max-height: 280px;
+    overflow: auto;
+    padding: 0;
+  }
+
+  &__item {
+    border-bottom: 1px solid shade(#fafafa, 10%);
+    padding: 10px 12px;
+
+    &:last-child {
+      border-bottom: none;
+    }
+  }
+
+  &__item--error {
+    background: #fff8f8;
+  }
+
+  &__item--duplicate {
+    background: #fffdf3;
+  }
+
+  &__item--possible_duplicate {
+    background: #f4f9ff;
+  }
+
+  &__row {
+    display: flex;
+    gap: 8px;
+    justify-content: space-between;
+  }
+
+  &__meta {
+    min-width: 0;
+  }
+
+  &__name {
+    color: $fontColor;
+    font-size: 13px;
+    font-weight: 600;
+    word-break: break-word;
+  }
+
+  &__path {
+    color: tint($fontColor, 45%);
+    font-size: 11px;
+    margin-top: 1px;
+    word-break: break-word;
+  }
+
+  &__summary {
+    color: tint($fontColor, 30%);
+    font-size: 12px;
+    margin-top: 3px;
+    word-break: break-word;
+  }
+
+  &__status {
+    align-items: center;
+    color: tint($fontColor, 20%);
+    display: inline-flex;
+    flex-shrink: 0;
+    font-size: 12px;
+    gap: 6px;
+    text-transform: uppercase;
+  }
+
+  &__spinner {
+    align-items: center;
+    display: inline-flex;
+    height: 14px;
+    justify-content: center;
+    width: 14px;
+
+    .raf-loading-indicator {
+      margin: 0;
+      transform: scale(0.55);
+    }
+  }
+
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  &__action {
+    background: transparent;
+    border: none;
+    color: $primary;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+
+  &__details {
+    background: #f8f8f8;
+    border-radius: 6px;
+    color: tint($fontColor, 20%);
+    font-size: 12px;
+    margin-top: 8px;
+    padding: 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  &__footer {
+    border-top: 1px solid shade(#fafafa, 15%);
+    display: flex;
+    justify-content: flex-end;
+    padding: 10px 12px;
+  }
+
+  &__confirm {
+    background: $primary;
+    border: none;
+    border-radius: 4px;
+    color: #fff;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 6px 10px;
+
+    &:disabled {
+      cursor: not-allowed;
+      opacity: 0.5;
+    }
+  }
+}
+
+.raf-flight-import-preview__results {
+  color: tint($fontColor, 20%);
+  font-size: 12px;
+  margin: 8px 0 4px;
+}

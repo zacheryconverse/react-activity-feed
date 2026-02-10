@@ -1,27 +1,17 @@
 {
   "include": ["./src"],
-  "exclude": [
-    "**/*.spec.ts",
-    "**/*.test.ts",
-    "**/*.spec.tsx",
-    "**/*.test.tsx",
-    "./src/gatsby-theme-docz",
-    "node_modules"
-  ],
+  "exclude": ["./src/gatsby-theme-docz", "node_modules"],
   "compilerOptions": {
     "lib": ["dom", "esnext"],
     "module": "esnext",
-    "outDir": "./dist",
-    "rootDir": "./src",
     "baseUrl": "./src",
-    "noEmit": false,
-    "noEmitOnError": false,
+    "noEmit": true,
+    "noEmitOnError": true,
     "target": "ES5",
     "importHelpers": true,
-    "declaration": true,
-    "declarationMap": true,
-    "declarationDir": "./dist",
-    "sourceMap": false,
+    "declaration": false,
+    "declarationMap": false,
+    "sourceMap": true,
     "strict": false,
     "strictNullChecks": true,
     "noImplicitReturns": true,
@@ -35,6 +25,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "resolveJsonModule": true,
+    "types": ["jest", "node"],
     "forceConsistentCasingInFileNames": true
   }
 }

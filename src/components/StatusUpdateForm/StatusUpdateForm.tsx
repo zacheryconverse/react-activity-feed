@@ -137,6 +137,8 @@ export function StatusUpdateForm<
     }
   };
 
+  const errorMessages = [state.uploadError, state.sourceError, state.previewImportError].filter(Boolean) as string[];
+
   return (
     <Panel style={style} className={className}>
       <form onSubmit={state.onSubmitForm}>
@@ -144,16 +146,11 @@ export function StatusUpdateForm<
           <PanelHeading>{Header ?? <Title>{t('New Post')}</Title>}</PanelHeading>
 
           <PanelContent>
-            {state.uploadError && (
-              <div style={{ color: 'red' }} className="error-message">
-                {state.uploadError}
+            {errorMessages.map((msg, idx) => (
+              <div key={idx} style={{ color: 'red' }} className="error-message">
+                {msg}
               </div>
-            )}
-            {state.sourceError && (
-              <div style={{ color: 'red' }} className="error-message">
-                {state.sourceError}
-              </div>
-            )}
+            ))}
             <div style={{ display: 'flex' }}>
               {state.userData.profileImage && (
                 <div style={{ marginRight: '16px' }}>
@@ -240,6 +237,13 @@ export function StatusUpdateForm<
                 onTogglePossibleDuplicate={state.togglePossibleDuplicateOverride}
               />
             )}
+            {state.hasBulkImportMode &&
+              !state.previewingImports &&
+              !state.previewImportError &&
+              state.flightImportPreviewItems?.length > 0 &&
+              !state.showFlightImportConfirm && (
+                <div className="raf-flight-import-preview__results">No importable flights in current selection.</div>
+              )}
             {state.flightImportSummary?.counts && (
               <div className="raf-flight-import-preview__results">
                 Imported: {state.flightImportSummary.counts.imported || 0} · Duplicates skipped:{' '}

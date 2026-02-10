@@ -97,6 +97,10 @@ const defaultFileState = { data: {}, order: [] };
 const defaultIgcState = { data: {}, order: [] };
 const defaultCsvState = { data: {}, order: [] };
 const MAX_BATCH_IMPORT_ITEMS = 25;
+const MAX_BATCH_IMPORT_PAYLOAD_BYTES = 4 * 1024 * 1024;
+const MAX_PREVIEW_IMPORT_ITEMS = 200;
+const MAX_PREVIEW_IMPORT_PAYLOAD_BYTES = 256 * 1024;
+const MAX_PREVIEW_POINTS = 2;
 
 const toNumberOrNull = (value) => {
   if (value === null || value === undefined) return null;
@@ -224,13 +228,83 @@ const mergeCsvStatsIntoIgc = (igcStats = {}, csvStats = {}) => {
   };
 };
 
-const chunkArray = (items, size) => {
-  if (!Array.isArray(items) || size <= 0) return [];
-  const chunks = [];
-  for (let index = 0; index < items.length; index += size) {
-    chunks.push(items.slice(index, index + size));
+const estimateJsonBytes = (value) => {
+  try {
+    const serialized = JSON.stringify(value);
+    if (typeof TextEncoder !== 'undefined') {
+      return new TextEncoder().encode(serialized).length;
+    }
+    return serialized.length;
+  } catch (error) {
+    return 0;
   }
+};
+
+const chunkItemsForPayload = (
+  items,
+  {
+    maxItems = Number.POSITIVE_INFINITY,
+    maxPayloadBytes = Number.POSITIVE_INFINITY,
+  }: { maxItems?: number; maxPayloadBytes?: number },
+) => {
+  if (!Array.isArray(items) || items.length === 0) return [];
+
+  const chunks = [];
+  let currentChunk = [];
+  let currentBytes = 2; // [] baseline
+
+  items.forEach((item) => {
+    const itemBytes = Math.max(1, estimateJsonBytes(item));
+    const exceedsItems = currentChunk.length >= maxItems;
+    const exceedsBytes = currentChunk.length > 0 && currentBytes + itemBytes + 1 > maxPayloadBytes;
+
+    if (exceedsItems || exceedsBytes) {
+      chunks.push(currentChunk);
+      currentChunk = [];
+      currentBytes = 2;
+    }
+
+    currentChunk.push(item);
+    currentBytes += itemBytes + 1;
+  });
+
+  if (currentChunk.length) {
+    chunks.push(currentChunk);
+  }
+
   return chunks;
+};
+
+const buildPreviewFlightStats = (flightStats = {}) => {
+  const stats = flightStats || {};
+  const points = Array.isArray(stats.points)
+    ? stats.points
+        .filter(
+          (point) => point && (point.label === 'First Fix' || point.label === 'Takeoff' || point === stats.points[0]),
+        )
+        .slice(0, MAX_PREVIEW_POINTS)
+        .map((point) => ({
+          label: point?.label || null,
+          latitude: toNumberOrNull(point?.latitude),
+          longitude: toNumberOrNull(point?.longitude),
+          time: point?.time || null,
+        }))
+    : [];
+
+  return {
+    date: stats.date || stats.flight_date || null,
+    duration_s: toNumberOrNull(stats.duration_s),
+    duration: stats.duration || null,
+    flightDuration: stats.flightDuration || null,
+    maxAltitude: toNumberOrNull(stats.maxAltitude || stats.max_altitude_m),
+    routeDistance: toNumberOrNull(
+      stats.routeDistance || stats.route_distance_km || stats.distance_km || stats.freeDistance,
+    ),
+    site: stats.site || stats.site_name || stats.takeoff || null,
+    start_time: stats.start_time || null,
+    totalDistance: toNumberOrNull(stats.totalDistance || stats.tracklogDistance),
+    ...(points.length ? { points } : {}),
+  };
 };
 
 const useTextArea = () => {
@@ -392,7 +466,7 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
   const orderedIgcs = igcs.order.map((id) => igcs.data[id]);
   const orderedCsvRows = csvRows.order.map((id) => csvRows.data[id]);
 
-  const uploadedIgcs = orderedIgcs.filter((upload) => upload.url);
+  const uploadedIgcs = orderedIgcs.filter((upload) => upload && upload.state === 'finished' && upload.data);
 
   const igcsPreviewItems = orderedIgcs.reduce((acc, upload) => {
     if (!upload) return acc;
@@ -1067,6 +1141,7 @@ export function useStatusUpdateForm<
     };
     sessionId?: string | null;
   } | null>(null);
+  const [previewImportError, setPreviewImportError] = useState<string | null>(null);
   const lastPreviewSignatureRef = useRef<string>('');
   const csvToIgcPairings = useMemo(() => {
     const igcNameToId = new Map();
@@ -1193,10 +1268,19 @@ export function useStatusUpdateForm<
     return candidates;
   }, [orderedIgcs, orderedCsvRows, effectiveIgcStatsById, pairedCsvIdSet]);
 
+  const previewRequestItems = useMemo(
+    () =>
+      previewCandidates.map((item) => ({
+        ...item,
+        flightStats: buildPreviewFlightStats(item.flightStats || {}),
+      })),
+    [previewCandidates],
+  );
+
   const previewSignature = useMemo(
     () =>
       JSON.stringify(
-        previewCandidates.map((item) => ({
+        previewRequestItems.map((item) => ({
           localId: item.localId,
           type: item.type,
           igcHash: item.igcHash || null,
@@ -1204,13 +1288,14 @@ export function useStatusUpdateForm<
           routeDistance: item?.flightStats?.routeDistance || item?.flightStats?.route_distance_km || null,
         })),
       ),
-    [previewCandidates],
+    [previewRequestItems],
   );
 
   const resetState = useCallback(() => {
     setText('');
     setSubmitting(false);
     setFlightImportSummary(null);
+    setPreviewImportError(null);
     resetOg();
     resetUpload();
   }, []);
@@ -1218,9 +1303,10 @@ export function useStatusUpdateForm<
   useEffect(() => {
     const activeUserId = client.currentUser?.id;
     if (!appCtx.baseUrl || !activeUserId) return;
-    if (!previewCandidates.length) {
+    if (!previewRequestItems.length) {
       lastPreviewSignatureRef.current = '';
       setPreviewingImports(false);
+      setPreviewImportError(null);
       return;
     }
     if (previewSignature === lastPreviewSignatureRef.current) return;
@@ -1231,14 +1317,32 @@ export function useStatusUpdateForm<
 
     const runPreview = async () => {
       try {
-        const response = await axios.post(`${appCtx.baseUrl}/auth/flight-import/preview`, {
-          userId: activeUserId,
-          items: previewCandidates,
+        const chunks = chunkItemsForPayload(previewRequestItems, {
+          maxItems: MAX_PREVIEW_IMPORT_ITEMS,
+          maxPayloadBytes: MAX_PREVIEW_IMPORT_PAYLOAD_BYTES,
         });
+
+        const aggregatedItems = [];
+        for (const chunk of chunks) {
+          const response = await axios.post(`${appCtx.baseUrl}/auth/flight-import/preview`, {
+            userId: activeUserId,
+            items: chunk,
+          });
+          aggregatedItems.push(...(response.data?.items || []));
+        }
         if (cancelled) return;
-        applyImportClassifications(response.data?.items || []);
+        setPreviewImportError(null);
+        applyImportClassifications(aggregatedItems);
       } catch (error) {
         if (!cancelled) {
+          const statusCode = error?.response?.status;
+          const isPayloadError =
+            statusCode === 413 || /too large/i.test(String(error?.message || error?.response?.data?.error || ''));
+          setPreviewImportError(
+            isPayloadError
+              ? 'Preview request is too large. Remove some files/rows and retry.'
+              : 'Unable to run duplicate checks right now. Confirm import is disabled until preview succeeds.',
+          );
           console.warn('Unable to preview flight import dedupe:', error?.message || error);
         }
       } finally {
@@ -1251,10 +1355,9 @@ export function useStatusUpdateForm<
     return () => {
       cancelled = true;
     };
-  }, [appCtx.baseUrl, client.currentUser?.id, previewSignature, previewCandidates, applyImportClassifications]);
+  }, [appCtx.baseUrl, client.currentUser?.id, previewSignature, applyImportClassifications]);
 
   const hasBulkImportMode = orderedCsvRows.length > 0 || orderedIgcs.length > 1;
-  const showFlightImportConfirm = hasBulkImportMode && resolvedFlightImportPreviewItems.length > 0;
   const importableFlightItemCount = resolvedFlightImportPreviewItems.filter((item) => {
     if (item.status === 'ready') return true;
     if (item.status === 'possible_duplicate') {
@@ -1262,11 +1365,15 @@ export function useStatusUpdateForm<
     }
     return false;
   }).length;
-  const confirmFlightImportDisabled = importingFlights || previewingImports || importableFlightItemCount === 0;
+  const showFlightImportConfirm =
+    hasBulkImportMode && resolvedFlightImportPreviewItems.length > 0 && importableFlightItemCount > 0;
+  const confirmFlightImportDisabled =
+    importingFlights || previewingImports || importableFlightItemCount === 0 || Boolean(previewImportError);
 
   const confirmFlightImport = useCallback(async () => {
     const activeUserId = client.currentUser?.id;
     if (!appCtx.baseUrl || !activeUserId) return;
+    if (previewImportError) return;
 
     setImportingFlights(true);
     setFlightImportSummary(null);
@@ -1324,7 +1431,10 @@ export function useStatusUpdateForm<
         (id) => possibleDuplicateOverrides[id],
       );
 
-      const chunks = chunkArray(payloadItems, MAX_BATCH_IMPORT_ITEMS);
+      const chunks = chunkItemsForPayload(payloadItems, {
+        maxItems: MAX_BATCH_IMPORT_ITEMS,
+        maxPayloadBytes: MAX_BATCH_IMPORT_PAYLOAD_BYTES,
+      });
       const aggregate = {
         counts: {
           duplicateSkipped: 0,
@@ -1414,6 +1524,7 @@ export function useStatusUpdateForm<
     csvToIgcPairings,
     possibleDuplicateOverrides,
     hasBulkImportMode,
+    previewImportError,
     removeImportItems,
     applyImportClassifications,
   ]);
@@ -1430,26 +1541,40 @@ export function useStatusUpdateForm<
   };
 
   const canSubmit = () =>
-    !submitting &&
-    Boolean(object()) &&
-    orderedCsvRows.length === 0 &&
-    orderedIgcs.length <= 1 &&
-    orderedImages.every((upload) => upload.state !== 'uploading') &&
-    orderedFiles.every((upload) => upload.state !== 'uploading') &&
-    orderedIgcs.every((upload) => {
-      if (upload.state === 'uploading' || !upload.data) return false;
-      if (upload.dedupeStatus === 'possible_duplicate' && !upload.overridePossibleDuplicate) {
-        return false;
-      }
-      return true;
-    }) &&
-    !isOgScraping &&
-    !previewingImports &&
-    !uploadError &&
-    !sourceError;
+    (() => {
+      const hasSingleIgcReady =
+        orderedCsvRows.length === 0 &&
+        orderedIgcs.length === 1 &&
+        Boolean(orderedIgcs[0]) &&
+        orderedIgcs[0].state !== 'uploading' &&
+        Boolean(orderedIgcs[0].data);
+      const hasObject = Boolean(object()) || hasSingleIgcReady;
+      const previewGate = !previewingImports || hasSingleIgcReady;
+
+      return (
+        !submitting &&
+        hasObject &&
+        orderedCsvRows.length === 0 &&
+        orderedIgcs.length <= 1 &&
+        orderedImages.every((upload) => upload.state !== 'uploading') &&
+        orderedFiles.every((upload) => upload.state !== 'uploading') &&
+        orderedIgcs.every((upload) => {
+          if (upload.state === 'uploading' || !upload.data) return false;
+          if (upload.dedupeStatus === 'possible_duplicate' && !upload.overridePossibleDuplicate) {
+            return false;
+          }
+          return true;
+        }) &&
+        !isOgScraping &&
+        previewGate &&
+        !uploadError &&
+        !sourceError
+      );
+    })();
 
   const addActivity = async () => {
     let flightId;
+    let uploadedIgcUrl: string | null = null;
     // for (const igc of uploadedIgcs) {
     if (uploadedIgcs.length === 1) {
       const igc = uploadedIgcs[0];
@@ -1475,11 +1600,21 @@ export function useStatusUpdateForm<
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       flightId = response.data.flightId;
+      uploadedIgcUrl = response.data?.igcFileUrl || null;
     }
+
+    const fallbackObject =
+      uploadedIgcUrl || object() || (uploadedIgcs.length === 1 ? `igc:${uploadedIgcs[0].id}` : text.trim());
+    const igcAttachments = uploadedIgcs
+      .map((igc, index) => ({
+        data: igc.data,
+        url: igc.url || (index === 0 ? uploadedIgcUrl : null),
+      }))
+      .filter((attachment) => attachment.url && attachment.data) as { data: FlightStatistics; url: string }[];
 
     const activity: NewActivity<AT> = {
       actor: client.currentUser?.ref() as string,
-      object: object(),
+      object: fallbackObject,
       verb: activityVerb,
       text: text.trim(),
       ...(flightId && { flightId }),
@@ -1493,12 +1628,7 @@ export function useStatusUpdateForm<
           name: (upload.file as File).name,
           mimeType: upload.file.type,
         })),
-        igc: uploadedIgcs
-          .map((igc) => ({
-            data: igc.data,
-            url: igc.url,
-          }))
-          .filter(Boolean) as { data: FlightStatistics; url: string }[],
+        igc: igcAttachments,
       },
     };
 
@@ -1699,6 +1829,7 @@ export function useStatusUpdateForm<
     text,
     submitting,
     previewingImports,
+    previewImportError,
     importingFlights,
     flightImportSummary,
     files,

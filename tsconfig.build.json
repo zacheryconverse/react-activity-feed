@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "include": ["./src"],
+  "exclude": [
+    "**/*.spec.ts",
+    "**/*.test.ts",
+    "**/*.spec.tsx",
+    "**/*.test.tsx",
+    "./src/gatsby-theme-docz",
+    "node_modules"
+  ],
+  "compilerOptions": {
+    "declaration": true,
+    "declarationDir": "./dist",
+    "declarationMap": true,
+    "noEmit": false,
+    "noEmitOnError": false,
+    "outDir": "./dist",
+    "rootDir": "./src",
+    "sourceMap": false
+  }
+}

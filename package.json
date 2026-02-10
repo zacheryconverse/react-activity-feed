@@ -31,7 +31,7 @@
     "lint": "yarn run prettier && yarn run eslint && stylelint '**/*.{css,scss}'",
     "lint-fix": "yarn run prettier-fix && yarn run eslint --fix && stylelint --fix '**/*.{css,scss}'",
     "stylelint": "stylelint '**/*.{css,scss}'",
-    "types": "tsc",
+    "types": "tsc -p tsconfig.build.json",
     "build": "yarn run types && rollup -c",
     "start": "yarn run types && rollup -c -w",
     "docs": "docz dev",

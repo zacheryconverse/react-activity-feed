@@ -50,6 +50,23 @@ export * from './components/Textarea';
 export * from './components/EmojiPicker';
 export * from './components/Title';
 export * from './components/Panel';
+export {
+  extractFilesFromZip,
+  hashIgcContent,
+  inferImportFileType,
+  normalizeCsvRows,
+} from './components/StatusUpdateForm/importParsers';
+export {
+  buildPreviewFlightStats,
+  chunkItemsForPayload,
+  mergeCsvStatsIntoIgc,
+  normalizeBasename,
+} from './components/StatusUpdateForm/importShared';
+export {
+  extractFlightStatistics,
+  extractIgcCompetitionClass,
+  parseIgcFile,
+} from './components/StatusUpdateForm/igcParser';
 
 export * from './i18n/locales';
 export * from './i18n/Streami18n';

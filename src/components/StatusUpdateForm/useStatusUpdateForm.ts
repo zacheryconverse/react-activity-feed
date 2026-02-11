@@ -26,6 +26,7 @@ import { DefaultAT, DefaultUT, useStreamContext } from '../../context';
 import { StatusUpdateFormProps } from './StatusUpdateForm';
 import { parseIgcFile, extractFlightStatistics, extractIgcCompetitionClass, FlightStatistics } from './igcParser';
 import { extractFilesFromZip, hashIgcContent, inferImportFileType, normalizeCsvRows } from './importParsers';
+import { buildPreviewFlightStats, chunkItemsForPayload, mergeCsvStatsIntoIgc, normalizeBasename } from './importShared';
 import {
   generateRandomId,
   dataTransferItemsToFiles,
@@ -89,7 +90,9 @@ type CsvState = { data: Record<string, CsvRowState>; order: string[] };
 
 type UseOgProps = { client: StreamClient; logErr: (e: Error | unknown, type: NetworkRequestTypes) => void };
 
-type UseUploadProps = UseOgProps;
+type UseUploadProps = UseOgProps & {
+  allowBulkImport?: boolean;
+};
 
 const defaultOgState = { activeUrl: '', data: {}, order: [] };
 const defaultImageState = { data: {}, order: [] };
@@ -100,212 +103,6 @@ const MAX_BATCH_IMPORT_ITEMS = 25;
 const MAX_BATCH_IMPORT_PAYLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_PREVIEW_IMPORT_ITEMS = 200;
 const MAX_PREVIEW_IMPORT_PAYLOAD_BYTES = 256 * 1024;
-const MAX_PREVIEW_POINTS = 2;
-
-const toNumberOrNull = (value) => {
-  if (value === null || value === undefined) return null;
-  const parsed = typeof value === 'string' ? parseFloat(value) : Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
-};
-
-const parseDurationSeconds = (value) => {
-  if (value === null || value === undefined) return null;
-  if (typeof value === 'number' && Number.isFinite(value)) return value;
-  const raw = String(value).trim();
-  if (!raw) return null;
-
-  if (/^\d+(\.\d+)?$/.test(raw)) {
-    const parsed = Number(raw);
-    return Number.isFinite(parsed) ? parsed : null;
-  }
-
-  const hms = raw.match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
-  if (hms) {
-    const hours = Number(hms[1]);
-    const minutes = Number(hms[2]);
-    const seconds = Number(hms[3] || 0);
-    return hours * 3600 + minutes * 60 + seconds;
-  }
-
-  const hmWords = raw.match(/(?:(\d+)\s*h)?\s*(\d+)\s*m/i);
-  if (hmWords) {
-    const hours = Number(hmWords[1] || 0);
-    const minutes = Number(hmWords[2] || 0);
-    return hours * 3600 + minutes * 60;
-  }
-
-  return null;
-};
-
-const normalizeDateOnly = (value) => {
-  if (!value) return null;
-  if (value instanceof Date && !Number.isNaN(value.getTime())) {
-    return value.toISOString().slice(0, 10);
-  }
-  if (typeof value === 'string') {
-    const iso = value.match(/\d{4}-\d{2}-\d{2}/);
-    if (iso) return iso[0];
-    const parsed = new Date(value);
-    if (!Number.isNaN(parsed.getTime())) {
-      return parsed.toISOString().slice(0, 10);
-    }
-  }
-  return null;
-};
-
-const normalizeBasename = (value) => {
-  const raw = String(value || '')
-    .trim()
-    .replace(/\\/g, '/');
-  if (!raw) return '';
-  const parts = raw.split('/');
-  return (parts[parts.length - 1] || '').toLowerCase();
-};
-
-const isDateCompatible = (left, right) => {
-  const leftDate = normalizeDateOnly(left);
-  const rightDate = normalizeDateOnly(right);
-  if (!leftDate || !rightDate) return true;
-  return leftDate === rightDate;
-};
-
-const isNumberCompatible = (left, right, maxRatio = 0.2, maxAbs = Number.POSITIVE_INFINITY) => {
-  const leftNum = toNumberOrNull(left);
-  const rightNum = toNumberOrNull(right);
-  if (!leftNum || !rightNum) return true;
-  const diff = Math.abs(leftNum - rightNum);
-  if (diff <= maxAbs) return true;
-  const ratio = diff / Math.max(leftNum, rightNum);
-  return ratio <= maxRatio;
-};
-
-const mergeCsvStatsIntoIgc = (igcStats = {}, csvStats = {}) => {
-  const merged = { ...(igcStats || {}) };
-  const consistencyErrors = [];
-
-  if (!isDateCompatible(igcStats?.date || igcStats?.flight_date, csvStats?.date || csvStats?.flight_date)) {
-    consistencyErrors.push('date mismatch');
-  }
-
-  const igcDuration =
-    toNumberOrNull(igcStats?.duration_s) || parseDurationSeconds(igcStats?.flightDuration || igcStats?.duration);
-  const csvDuration =
-    toNumberOrNull(csvStats?.duration_s) || parseDurationSeconds(csvStats?.flightDuration || csvStats?.duration);
-  if (!isNumberCompatible(igcDuration, csvDuration, 0.25, 20 * 60)) {
-    consistencyErrors.push('duration mismatch');
-  }
-
-  const igcDistance =
-    toNumberOrNull(igcStats?.routeDistance) ||
-    toNumberOrNull(igcStats?.route_distance_km) ||
-    toNumberOrNull(igcStats?.freeDistance);
-  const csvDistance =
-    toNumberOrNull(csvStats?.routeDistance) ||
-    toNumberOrNull(csvStats?.route_distance_km) ||
-    toNumberOrNull(csvStats?.freeDistance);
-  if (!isNumberCompatible(igcDistance, csvDistance, 0.2, 5)) {
-    consistencyErrors.push('distance mismatch');
-  }
-
-  if (!consistencyErrors.length) {
-    if (!merged.site && csvStats?.site) merged.site = csvStats.site;
-    if (!merged.pilot && csvStats?.pilot) merged.pilot = csvStats.pilot;
-    if (!merged.start_time && csvStats?.start_time) merged.start_time = csvStats.start_time;
-    if (!merged.end_time && csvStats?.end_time) merged.end_time = csvStats.end_time;
-    if (!merged.maxAltitude && csvStats?.maxAltitude) merged.maxAltitude = csvStats.maxAltitude;
-    if (
-      (!Array.isArray(merged.points) || merged.points.length === 0) &&
-      Array.isArray(csvStats?.points) &&
-      csvStats.points.length > 0
-    ) {
-      merged.points = csvStats.points;
-    }
-  }
-
-  return {
-    merged,
-    consistencyErrors,
-  };
-};
-
-const estimateJsonBytes = (value) => {
-  try {
-    const serialized = JSON.stringify(value);
-    if (typeof TextEncoder !== 'undefined') {
-      return new TextEncoder().encode(serialized).length;
-    }
-    return serialized.length;
-  } catch (error) {
-    return 0;
-  }
-};
-
-const chunkItemsForPayload = (
-  items,
-  {
-    maxItems = Number.POSITIVE_INFINITY,
-    maxPayloadBytes = Number.POSITIVE_INFINITY,
-  }: { maxItems?: number; maxPayloadBytes?: number },
-) => {
-  if (!Array.isArray(items) || items.length === 0) return [];
-
-  const chunks = [];
-  let currentChunk = [];
-  let currentBytes = 2; // [] baseline
-
-  items.forEach((item) => {
-    const itemBytes = Math.max(1, estimateJsonBytes(item));
-    const exceedsItems = currentChunk.length >= maxItems;
-    const exceedsBytes = currentChunk.length > 0 && currentBytes + itemBytes + 1 > maxPayloadBytes;
-
-    if (exceedsItems || exceedsBytes) {
-      chunks.push(currentChunk);
-      currentChunk = [];
-      currentBytes = 2;
-    }
-
-    currentChunk.push(item);
-    currentBytes += itemBytes + 1;
-  });
-
-  if (currentChunk.length) {
-    chunks.push(currentChunk);
-  }
-
-  return chunks;
-};
-
-const buildPreviewFlightStats = (flightStats = {}) => {
-  const stats = flightStats || {};
-  const points = Array.isArray(stats.points)
-    ? stats.points
-        .filter(
-          (point) => point && (point.label === 'First Fix' || point.label === 'Takeoff' || point === stats.points[0]),
-        )
-        .slice(0, MAX_PREVIEW_POINTS)
-        .map((point) => ({
-          label: point?.label || null,
-          latitude: toNumberOrNull(point?.latitude),
-          longitude: toNumberOrNull(point?.longitude),
-          time: point?.time || null,
-        }))
-    : [];
-
-  return {
-    date: stats.date || stats.flight_date || null,
-    duration_s: toNumberOrNull(stats.duration_s),
-    duration: stats.duration || null,
-    flightDuration: stats.flightDuration || null,
-    maxAltitude: toNumberOrNull(stats.maxAltitude || stats.max_altitude_m),
-    routeDistance: toNumberOrNull(
-      stats.routeDistance || stats.route_distance_km || stats.distance_km || stats.freeDistance,
-    ),
-    site: stats.site || stats.site_name || stats.takeoff || null,
-    start_time: stats.start_time || null,
-    totalDistance: toNumberOrNull(stats.totalDistance || stats.tracklogDistance),
-    ...(points.length ? { points } : {}),
-  };
-};
 
 const useTextArea = () => {
   const [text, setText] = useState('');
@@ -445,7 +242,7 @@ const useOg = ({ client, logErr }: UseOgProps) => {
   };
 };
 
-const useUpload = ({ client, logErr }: UseUploadProps) => {
+const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) => {
   const [images, setImages] = useState<ImagesState>(defaultImageState);
   const [files, setFiles] = useState<FilesState>(defaultFileState);
   const [igcs, setIgcs] = useState<IgcState>(defaultIgcState);
@@ -858,6 +655,15 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         const sourcePath = file?.webkitRelativePath || file?.name || null;
 
         try {
+          if (!allowBulkImport && (inferredType === 'csv' || inferredType === 'zip')) {
+            setSourceError('Bulk CSV/ZIP import moved to Flight Log. Use Profile > Flight Log > Import flights.');
+            continue;
+          }
+          if (!allowBulkImport && inferredType === 'igc' && igcs.order.length >= 1) {
+            setSourceError('Only one IGC can be attached to a post.');
+            continue;
+          }
+
           if (inferredType === 'igc') {
             await uploadNewIgc(file, sourcePath);
           } else if (inferredType === 'csv') {
@@ -874,7 +680,16 @@ const useUpload = ({ client, logErr }: UseUploadProps) => {
         }
       }
     },
-    [uploadNewImage, uploadNewIgc, addCsvRowsFromFile, expandZipSource, uploadNewFile, logErr],
+    [
+      allowBulkImport,
+      igcs.order.length,
+      uploadNewImage,
+      uploadNewIgc,
+      addCsvRowsFromFile,
+      expandZipSource,
+      uploadNewFile,
+      logErr,
+    ],
   );
 
   const removeImage = useCallback((id: string) => {
@@ -1077,10 +892,11 @@ export function useStatusUpdateForm<
   modifyActivityData,
   doRequest,
   userId,
+  allowBulkImport = false,
   onSuccess,
 }: { activityVerb: string; feedGroup: string } & Pick<
   StatusUpdateFormProps<AT>,
-  'doRequest' | 'modifyActivityData' | 'onSuccess' | 'userId'
+  'allowBulkImport' | 'doRequest' | 'modifyActivityData' | 'onSuccess' | 'userId'
 >) {
   const [submitting, setSubmitting] = useState(false);
 
@@ -1129,7 +945,7 @@ export function useStatusUpdateForm<
     togglePossibleDuplicateOverride,
     uploadError,
     sourceError,
-  } = useUpload({ client: client as StreamClient, logErr });
+  } = useUpload({ client: client as StreamClient, logErr, allowBulkImport });
   const [previewingImports, setPreviewingImports] = useState(false);
   const [importingFlights, setImportingFlights] = useState(false);
   const [flightImportSummary, setFlightImportSummary] = useState<{
@@ -1142,6 +958,7 @@ export function useStatusUpdateForm<
     sessionId?: string | null;
   } | null>(null);
   const [previewImportError, setPreviewImportError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const lastPreviewSignatureRef = useRef<string>('');
   const csvToIgcPairings = useMemo(() => {
     const igcNameToId = new Map();
@@ -1272,7 +1089,10 @@ export function useStatusUpdateForm<
     () =>
       previewCandidates.map((item) => ({
         ...item,
-        flightStats: buildPreviewFlightStats(item.flightStats || {}),
+        flightStats: buildPreviewFlightStats(item.flightStats || {}, {
+          includeFirstPointFallback: true,
+          maxPreviewPoints: 2,
+        }),
       })),
     [previewCandidates],
   );
@@ -1296,6 +1116,7 @@ export function useStatusUpdateForm<
     setSubmitting(false);
     setFlightImportSummary(null);
     setPreviewImportError(null);
+    setSubmitError(null);
     resetOg();
     resetUpload();
   }, []);
@@ -1357,7 +1178,7 @@ export function useStatusUpdateForm<
     };
   }, [appCtx.baseUrl, client.currentUser?.id, previewSignature, applyImportClassifications]);
 
-  const hasBulkImportMode = orderedCsvRows.length > 0 || orderedIgcs.length > 1;
+  const hasBulkImportMode = allowBulkImport && (orderedCsvRows.length > 0 || orderedIgcs.length > 1);
   const importableFlightItemCount = resolvedFlightImportPreviewItems.filter((item) => {
     if (item.status === 'ready') return true;
     if (item.status === 'possible_duplicate') {
@@ -1560,6 +1381,12 @@ export function useStatusUpdateForm<
         orderedFiles.every((upload) => upload.state !== 'uploading') &&
         orderedIgcs.every((upload) => {
           if (upload.state === 'uploading' || !upload.data) return false;
+          if (!upload.dedupeStatus) {
+            return false;
+          }
+          if (upload.dedupeStatus === 'duplicate') {
+            return false;
+          }
           if (upload.dedupeStatus === 'possible_duplicate' && !upload.overridePossibleDuplicate) {
             return false;
           }
@@ -1567,6 +1394,7 @@ export function useStatusUpdateForm<
         }) &&
         !isOgScraping &&
         previewGate &&
+        !previewImportError &&
         !uploadError &&
         !sourceError
       );
@@ -1599,6 +1427,9 @@ export function useStatusUpdateForm<
       const response = await axios.post(`${appCtx.baseUrl}/auth/upload-igc`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
+      if (response?.data?.duplicate) {
+        throw new Error(response?.data?.explanation || response?.data?.message || 'Duplicate flight import blocked');
+      }
       flightId = response.data.flightId;
       uploadedIgcUrl = response.data?.igcFileUrl || null;
     }
@@ -1643,6 +1474,7 @@ export function useStatusUpdateForm<
   const onSubmitForm = async (e: FormEvent) => {
     e.preventDefault();
     try {
+      setSubmitError(null);
       setSubmitting(true);
       // console.log('Submitting text:', text);
       const response = await addActivity();
@@ -1650,6 +1482,13 @@ export function useStatusUpdateForm<
       if (onSuccess) onSuccess(response);
     } catch (e) {
       setSubmitting(false);
+      const message =
+        (e as any)?.response?.data?.error ||
+        (e as any)?.response?.data?.explanation ||
+        (e as any)?.response?.data?.message ||
+        (e as any)?.message ||
+        'Unable to submit post';
+      setSubmitError(String(message));
       logErr(e, 'add-activity');
     }
   };
@@ -1870,5 +1709,6 @@ export function useStatusUpdateForm<
     onPaste,
     uploadError,
     sourceError,
+    submitError,
   };
 }

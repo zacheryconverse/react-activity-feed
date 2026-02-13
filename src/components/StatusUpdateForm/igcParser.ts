@@ -22,34 +22,9 @@ export interface FlightData {
   task?: string;
 }
 
-const reformatIgcContent = (content: string): string => {
-  const lines = content.split('\n');
-  const reformattedLines = lines.map((line) => {
-    if (line.startsWith('HFDTEDATE:')) {
-      return line.replace('HFDTEDATE:', 'HFDTE');
-    }
-    if (line.startsWith('HSCCLCOMPETITION CLASS:')) {
-      return line.replace('HSCCLCOMPETITION CLASS:', 'HFCCLCOMPETITIONCLASS:');
-    }
-    return line;
-  });
-  return reformattedLines.join('\n');
-};
-
 export const parseIgcFile = (igcFileContent: string): FlightData | null => {
   try {
-    let flightData;
-    try {
-      flightData = parse(igcFileContent) as unknown as FlightData;
-    } catch (parseError) {
-      // If initial parse fails, try reformatting headers and parsing again
-      const reformattedContent = reformatIgcContent(igcFileContent);
-      flightData = parse(reformattedContent) as unknown as FlightData;
-    }
-    if (!flightData) {
-      throw new Error('Failed to parse IGC file');
-    }
-    return flightData;
+    return parse(igcFileContent) as unknown as FlightData;
   } catch (error) {
     console.error('Invalid IGC file content:', error);
     return null;
@@ -341,38 +316,19 @@ const buildFlightPoints = (
 
 const determineRegionsForFlight = (points: FlightPoint[], regions: { name: string; polygon: Feature<Polygon> }[]) => {
   const regionsForFlight = new Set<string>();
+  const reverseGeocode = country_reverse_geocoding();
   let flightCountryCode: string | null = null;
 
-  // Wrap country-reverse-geocoding in try-catch to handle bundling issues gracefully
-  type ReverseGeocode = {
-    get_country: (lat: number, lon: number) => { code: string; name: string } | null;
-  };
-  let reverseGeocode: ReverseGeocode | null = null;
-  try {
-    reverseGeocode = country_reverse_geocoding() as ReverseGeocode;
-  } catch (error) {
-    console.warn('Failed to initialize country-reverse-geocoding, skipping country detection:', error);
-  }
-
   points.forEach((point) => {
-    // Only use reverse geocoding if it initialized successfully
-    if (reverseGeocode) {
-      try {
-        const country = reverseGeocode.get_country(point.latitude, point.longitude);
-        const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
+    const country = reverseGeocode.get_country(point.latitude, point.longitude);
+    const formattedCountry = country ? country.name.toLowerCase().replace(/\s/g, '') : null;
 
-        if (!flightCountryCode && country?.code && typeof country.code === 'string') {
-          flightCountryCode = country.code.toUpperCase();
-        }
+    if (!flightCountryCode && country?.code && typeof country.code === 'string') {
+      flightCountryCode = country.code.toUpperCase();
+    }
 
-        if (country && !regionsForFlight.has(formattedCountry)) {
-          regionsForFlight.add(formattedCountry);
-          console.log('Country:', country.name, formattedCountry);
-        }
-      } catch (error) {
-        // Silently continue if reverse geocoding fails for this point
-        console.warn('Reverse geocoding failed for point:', error);
-      }
+    if (country && !regionsForFlight.has(formattedCountry)) {
+      regionsForFlight.add(formattedCountry);
     }
 
     regions.forEach((region) => {
@@ -381,8 +337,6 @@ const determineRegionsForFlight = (points: FlightPoint[], regions: { name: strin
       }
     });
   });
-
-  console.log('regionsForFlight:', regionsForFlight);
 
   return { regionsForFlight, flightCountryCode };
 };

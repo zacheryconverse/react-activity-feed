@@ -1,0 +1,31 @@
+diff --git a/node_modules/country-reverse-geocoding/lib/country_reverse_geocoding.js b/node_modules/country-reverse-geocoding/lib/country_reverse_geocoding.js
+index f9717a6..11285ab 100644
+--- a/node_modules/country-reverse-geocoding/lib/country_reverse_geocoding.js
++++ b/node_modules/country-reverse-geocoding/lib/country_reverse_geocoding.js
+@@ -269,7 +269,7 @@ var country_reverse_geocoding = function(spec, my) {
+    * @param point object representing the point's coordinates
+    * @return boolean true if the point lies within the polygon, false otherwise
+    */
+-  point_in_polygon = function(polygon, point) {
++  var point_in_polygon = function(polygon, point) {
+     var nvert = polygon.length;
+     var c = false;
+     var i = 0;
+@@ -293,7 +293,7 @@ var country_reverse_geocoding = function(spec, my) {
+    * @return object { code: '', name: '' }
+    *         information about a US state, null if not in a US state
+    */
+-  get_us_state = function(lat, lng) {
++  var get_us_state = function(lat, lng) {
+     if(typeof lat !== 'number' || typeof lng!== 'number') {
+       return new Error('Wrong coordinates (' + lat + ',' + lng + ')');
+     }
+@@ -334,7 +334,7 @@ var country_reverse_geocoding = function(spec, my) {
+    * @return object { code: '', name: '' }
+    *         information about a country, null if not in a country
+    */
+-  get_country = function(lat, lng) {
++  var get_country = function(lat, lng) {
+     if(typeof lat !== 'number' || typeof lng!== 'number') {
+       return new Error('Wrong coordinates (' + lat + ',' + lng + ')');
+     }

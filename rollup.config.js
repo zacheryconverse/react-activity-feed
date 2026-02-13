@@ -47,6 +47,7 @@ const normalBundle = {
   external: [
     /@babel/,
     '@webscopeio/react-textarea-autocomplete',
+    'country-reverse-geocoding',
     /dayjs/,
     /emoji-mart/,
     'getstream',

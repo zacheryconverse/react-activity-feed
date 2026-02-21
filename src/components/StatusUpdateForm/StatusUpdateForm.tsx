@@ -247,6 +247,10 @@ export function StatusUpdateForm<
   const errorMessages = [state.uploadError, state.sourceError, state.previewImportError, state.submitError].filter(
     Boolean,
   ) as string[];
+  const duplicateSingleIgcNotice =
+    state.orderedIgcs.length === 1 && state.orderedIgcs[0]?.dedupeStatus === 'duplicate'
+      ? 'This flight is already in your logbook. Post it if you like: it will NOT create another logbook flight and will NOT change your stats.'
+      : null;
 
   return (
     <Panel style={style} className={className}>
@@ -260,6 +264,18 @@ export function StatusUpdateForm<
                 {msg}
               </div>
             ))}
+            {duplicateSingleIgcNotice && (
+              <div
+                className="raf-flight-import-preview__results"
+                style={{
+                  background: 'rgba(90, 200, 120, 0.08)',
+                  border: '1px solid rgba(90, 200, 120, 0.35)',
+                  color: '#7adf96',
+                }}
+              >
+                {duplicateSingleIgcNotice}
+              </div>
+            )}
             <div style={{ display: 'flex' }}>
               {state.userData.profileImage && (
                 <div style={{ marginRight: '16px' }}>

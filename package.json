@@ -22,7 +22,7 @@
     "node": "12 || >=14"
   },
   "scripts": {
-    "postinstall": "patch-package",
+    "postinstall": "npx patch-package",
     "test": "jest",
     "test-browser-build": "karma start ./test-browser-bundle/karma.config.js",
     "eslint": "eslint '**/*.{js,jsx,ts,tsx,md,mdx}' --max-warnings 0",

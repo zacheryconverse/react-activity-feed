@@ -919,6 +919,7 @@ export function useStatusUpdateForm<
           type: 'igc',
           fileName: (igc.file as File)?.name || 'flight.igc',
           filePath: igc.filePath || null,
+          activityIgcUrl: igc.url || null,
           igcHash: igc.fingerprint || null,
           igcContent,
           flightStats: {
@@ -1058,7 +1059,7 @@ export function useStatusUpdateForm<
             return false;
           }
           if (upload.dedupeStatus === 'duplicate') {
-            return false;
+            return true;
           }
           if (upload.dedupeStatus === 'possible_duplicate' && !upload.overridePossibleDuplicate) {
             return false;
@@ -1100,11 +1101,10 @@ export function useStatusUpdateForm<
       const response = await axios.post(`${appCtx.baseUrl}/auth/upload-igc`, formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
-      if (response?.data?.duplicate) {
-        throw new Error(response?.data?.explanation || response?.data?.message || 'Duplicate flight import blocked');
+      if (!response?.data?.duplicate) {
+        flightId = response.data.flightId;
+        uploadedIgcUrl = response.data?.igcFileUrl || null;
       }
-      flightId = response.data.flightId;
-      uploadedIgcUrl = response.data?.igcFileUrl || null;
     }
 
     const fallbackObject =

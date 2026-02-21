@@ -59,28 +59,28 @@
 }
 
 .raf-flight-import-preview {
-  border: 1px solid shade(#fafafa, 15%);
+  border: 1px solid #2a2a2a;
   border-radius: $borderRadius;
   margin: 12px 0;
   overflow: hidden;
-  background: #fff;
+  background: #0c0c0c;
 
   &__header {
     align-items: center;
-    border-bottom: 1px solid shade(#fafafa, 15%);
+    border-bottom: 1px solid #1f1f1f;
     display: flex;
     justify-content: space-between;
     padding: 10px 12px;
   }
 
   &__title {
-    color: $fontColor;
+    color: #efefef;
     font-size: 13px;
     font-weight: 700;
   }
 
   &__counts {
-    color: tint($fontColor, 30%);
+    color: #9f9f9f;
     display: flex;
     gap: 10px;
     font-size: 12px;
@@ -97,8 +97,9 @@
   }
 
   &__item {
-    border-bottom: 1px solid shade(#fafafa, 10%);
+    border-bottom: 1px solid #1f1f1f;
     padding: 10px 12px;
+    background: #101010;
 
     &:last-child {
       border-bottom: none;
@@ -106,15 +107,15 @@
   }
 
   &__item--error {
-    background: #fff8f8;
+    background: #151010;
   }
 
   &__item--duplicate {
-    background: #fffdf3;
+    background: #131310;
   }
 
   &__item--possible_duplicate {
-    background: #f4f9ff;
+    background: #14130f;
   }
 
   &__row {
@@ -128,21 +129,21 @@
   }
 
   &__name {
-    color: $fontColor;
+    color: #e7e7e7;
     font-size: 13px;
     font-weight: 600;
     word-break: break-word;
   }
 
   &__path {
-    color: tint($fontColor, 45%);
+    color: #808080;
     font-size: 11px;
     margin-top: 1px;
     word-break: break-word;
   }
 
   &__summary {
-    color: tint($fontColor, 30%);
+    color: #bcbcbc;
     font-size: 12px;
     margin-top: 3px;
     word-break: break-word;
@@ -150,12 +151,52 @@
 
   &__status {
     align-items: center;
-    color: tint($fontColor, 20%);
     display: inline-flex;
     flex-shrink: 0;
-    font-size: 12px;
     gap: 6px;
+  }
+
+  &__status-tag {
+    border: 1px solid #2f2f2f;
+    border-radius: 999px;
+    padding: 2px 8px;
+    color: #bcbcbc;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
     text-transform: uppercase;
+    letter-spacing: 0.04em;
+    white-space: nowrap;
+  }
+
+  &__status-tag--ready {
+    border-color: rgba(80, 170, 100, 0.45);
+    color: #9fd5ac;
+    background: rgba(56, 120, 70, 0.16);
+  }
+
+  &__status-tag--duplicate {
+    border-color: rgba(229, 176, 89, 0.45);
+    color: #e5b059;
+    background: rgba(124, 90, 35, 0.2);
+  }
+
+  &__status-tag--possible_duplicate {
+    border-color: rgba(231, 161, 71, 0.45);
+    color: #f5cd7f;
+    background: rgba(126, 82, 28, 0.22);
+  }
+
+  &__status-tag--error {
+    border-color: rgba(224, 107, 107, 0.45);
+    color: #f0a6a6;
+    background: rgba(116, 45, 45, 0.24);
+  }
+
+  &__status-tag--parsing {
+    border-color: #303030;
+    color: #b4b4b4;
+    background: #161616;
   }
 
   &__spinner {
@@ -181,7 +222,7 @@
   &__action {
     background: transparent;
     border: none;
-    color: $primary;
+    color: #8fd88f;
     cursor: pointer;
     font-size: 12px;
     padding: 0;
@@ -192,9 +233,10 @@
   }
 
   &__details {
-    background: #f8f8f8;
+    background: #0d0d0d;
+    border: 1px solid #1f1f1f;
     border-radius: 6px;
-    color: tint($fontColor, 20%);
+    color: #ababab;
     font-size: 12px;
     margin-top: 8px;
     padding: 8px;
@@ -203,21 +245,26 @@
   }
 
   &__footer {
-    border-top: 1px solid shade(#fafafa, 15%);
+    border-top: 1px solid #1f1f1f;
     display: flex;
     justify-content: flex-end;
     padding: 10px 12px;
   }
 
   &__confirm {
-    background: $primary;
-    border: none;
-    border-radius: 4px;
-    color: #fff;
+    border: 1px solid #5aa15f;
+    border-radius: 999px;
+    background: #2a5a2e;
+    color: #e6f4e6;
     cursor: pointer;
     font-size: 12px;
     font-weight: 600;
-    padding: 6px 10px;
+    padding: 6px 12px;
+
+    &:hover:not(:disabled) {
+      border-color: #6cb672;
+      background: #2f6634;
+    }
 
     &:disabled {
       cursor: not-allowed;
@@ -227,7 +274,8 @@
 }
 
 .raf-flight-import-preview__results {
-  color: tint($fontColor, 20%);
+  color: #b5b5b5;
   font-size: 12px;
   margin: 8px 0 4px;
+  line-height: 1.4;
 }

@@ -41,6 +41,14 @@ const STATUS_LABELS: Record<ImportPreviewStatus, string> = {
   ready: 'Ready',
 };
 
+const normalizeLocationLabel = (value?: string | null) => {
+  if (!value) return null;
+  const trimmed = String(value).trim();
+  if (!trimmed) return null;
+  if (trimmed === 'First Fix' || trimmed === 'Last Fix') return null;
+  return trimmed;
+};
+
 function formatDate(date: ImportPreviewSummary['date']) {
   if (!date) return null;
   if (typeof date === 'string') {
@@ -58,13 +66,15 @@ function formatSummary(summary?: ImportPreviewSummary | null) {
   if (!summary) return 'No parsed summary';
   const parts: string[] = [];
   const dateLabel = formatDate(summary.date);
+  const takeoffLabel = normalizeLocationLabel(summary.takeoff);
+  const landingLabel = normalizeLocationLabel(summary.landing);
   if (dateLabel) parts.push(dateLabel);
   if (summary.duration) parts.push(summary.duration);
   if (Number.isFinite(summary.distanceKm as number)) {
     parts.push(`${Number(summary.distanceKm).toFixed(1)} km`);
   }
-  if (summary.takeoff) parts.push(`TO: ${summary.takeoff}`);
-  if (summary.landing) parts.push(`LD: ${summary.landing}`);
+  if (takeoffLabel) parts.push(`TO: ${takeoffLabel}`);
+  if (landingLabel) parts.push(`LD: ${landingLabel}`);
   return parts.length ? parts.join(' · ') : 'No parsed summary';
 }
 
@@ -123,6 +133,9 @@ export const FlightImportPreview = ({
         {items.map((item) => {
           const isExpanded = Boolean(expandedRows[item.id]);
           const hasDetails = Boolean(item.errorMessage || item.duplicateExplanation);
+          const canShowDetails =
+            (item.status === 'duplicate' || item.status === 'possible_duplicate' || item.status === 'error') &&
+            hasDetails;
           const isPossible = item.status === 'possible_duplicate';
           const isParsing = item.status === 'parsing';
           const isError = item.status === 'error';
@@ -146,7 +159,11 @@ export const FlightImportPreview = ({
                       <LoadingIndicator />
                     </span>
                   )}
-                  <span>{STATUS_LABELS[item.status]}</span>
+                  <span
+                    className={`raf-flight-import-preview__status-tag raf-flight-import-preview__status-tag--${item.status}`}
+                  >
+                    {STATUS_LABELS[item.status]}
+                  </span>
                 </div>
               </div>
 
@@ -160,7 +177,7 @@ export const FlightImportPreview = ({
                     {possibleDuplicateOverrides[item.id] ? 'Skip this possible duplicate' : 'Import anyway'}
                   </button>
                 )}
-                {hasDetails && (
+                {canShowDetails && (
                   <button
                     type="button"
                     className="raf-flight-import-preview__action"
@@ -181,7 +198,7 @@ export const FlightImportPreview = ({
                 )}
               </div>
 
-              {isExpanded && (
+              {isExpanded && canShowDetails && (
                 <div className="raf-flight-import-preview__details">
                   {item.errorMessage && <div>{item.errorMessage}</div>}
                   {item.duplicateExplanation && <div>{item.duplicateExplanation}</div>}

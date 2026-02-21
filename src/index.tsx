@@ -50,18 +50,8 @@ export * from './components/Textarea';
 export * from './components/EmojiPicker';
 export * from './components/Title';
 export * from './components/Panel';
-export {
-  extractFilesFromZip,
-  hashIgcContent,
-  inferImportFileType,
-  normalizeCsvRows,
-} from './components/StatusUpdateForm/importParsers';
-export {
-  buildPreviewFlightStats,
-  chunkItemsForPayload,
-  mergeCsvStatsIntoIgc,
-  normalizeBasename,
-} from './components/StatusUpdateForm/importShared';
+export { extractFilesFromZip, hashIgcContent, inferImportFileType } from './components/StatusUpdateForm/importParsers';
+export { buildPreviewFlightStats, chunkItemsForPayload } from './components/StatusUpdateForm/importShared';
 export {
   extractFlightStatistics,
   extractIgcCompetitionClass,

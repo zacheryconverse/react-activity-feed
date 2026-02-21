@@ -31,7 +31,7 @@ import { BookmarkIcon } from '../Icons';
 export type StatusUpdateFormProps<AT extends DefaultAT = DefaultAT> = PropsWithElementAttributes<{
   /** The verb that should be used to post the activity, default to "post" */
   activityVerb?: string;
-  /** Enable multi-source bulk import controls (CSV/ZIP/folder) */
+  /** Enable bulk import controls (ZIP/folder) */
   allowBulkImport?: boolean;
   /** Override Post request */
   doRequest?: (activity: NewActivity<AT>) => Promise<Activity<AT>>;
@@ -107,7 +107,9 @@ const FlightImportSection = ({
       !state.previewImportError &&
       state.flightImportPreviewItems?.length > 0 &&
       !state.showFlightImportConfirm && (
-        <div className="raf-flight-import-preview__results">No importable flights in current selection.</div>
+        <div className="raf-flight-import-preview__results">
+          No flights selected to import. Add .igc files or remove skipped duplicates.
+        </div>
       )}
     {state.flightImportSummary?.counts && (
       <div className="raf-flight-import-preview__results">
@@ -233,10 +235,6 @@ export function StatusUpdateForm<
   const handleRemoveImport = (id: string) => {
     if (state.igcs?.data?.[id]) {
       state.removeIgc(id);
-      return;
-    }
-    if (state.csvRows?.data?.[id]) {
-      state.removeCsvRow(id);
     }
   };
 
@@ -286,7 +284,7 @@ export function StatusUpdateForm<
                   <div style={{ marginRight: '32px', display: 'inline-block' }}>
                     <FileUploadButton
                       handleFiles={state.uploadNewFiles}
-                      accepts={allowBulkImport ? '.igc,.IGC,.csv,.CSV,.zip,.ZIP' : '.igc,.IGC'}
+                      accepts={allowBulkImport ? '.igc,.IGC,.zip,.ZIP' : '.igc,.IGC'}
                       multiple={allowBulkImport}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" height="40px">
@@ -329,7 +327,7 @@ export function StatusUpdateForm<
               </div>
               <span className="upload-hint">
                 {allowBulkImport
-                  ? 'Browse, drag/drop, paste, or select a folder for .igc/.csv/.zip flight imports'
+                  ? 'Browse, drag/drop, paste, or select a folder for .igc/.zip flight imports'
                   : 'Browse, drag/drop, or paste a single .igc flight file'}
               </span>
             </PanelFooter>

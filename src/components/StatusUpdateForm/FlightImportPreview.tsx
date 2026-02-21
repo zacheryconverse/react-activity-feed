@@ -114,7 +114,7 @@ export const FlightImportPreview = ({
         <div className="raf-flight-import-preview__counts">
           <span>Will upload: {counts.willUpload}</span>
           <span>Duplicates: {counts.duplicates}</span>
-          <span>Possible: {counts.possibleDuplicates}</span>
+          <span>Possible duplicates: {counts.possibleDuplicates}</span>
           <span>Errors: {counts.errors}</span>
         </div>
       </div>

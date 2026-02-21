@@ -25,8 +25,8 @@ import { solver, scoringRules } from 'igc-xc-score';
 import { DefaultAT, DefaultUT, useStreamContext } from '../../context';
 import { StatusUpdateFormProps } from './StatusUpdateForm';
 import { parseIgcFile, extractFlightStatistics, extractIgcCompetitionClass, FlightStatistics } from './igcParser';
-import { extractFilesFromZip, hashIgcContent, inferImportFileType, normalizeCsvRows } from './importParsers';
-import { buildPreviewFlightStats, chunkItemsForPayload, mergeCsvStatsIntoIgc, normalizeBasename } from './importShared';
+import { extractFilesFromZip, hashIgcContent, inferImportFileType } from './importParsers';
+import { buildPreviewFlightStats, chunkItemsForPayload } from './importShared';
 import {
   generateRandomId,
   dataTransferItemsToFiles,
@@ -65,29 +65,6 @@ type FilesState = { data: Record<string, FileUploadState>; order: string[] };
 
 type IgcState = { data: Record<string, FileUploadState>; order: string[] };
 
-type CsvRowState = {
-  id: string;
-  rowIndex: number;
-  sourceFileName: string;
-  state: UploadState;
-  dedupeStatus?: 'duplicate' | 'possible_duplicate' | 'ready' | null;
-  duplicateExplanation?: string | null;
-  errorMessage?: string | null;
-  flightStats?: Record<string, unknown>;
-  igcFileName?: string | null;
-  overridePossibleDuplicate?: boolean;
-  sourceFilePath?: string | null;
-  summary?: {
-    date?: string | null;
-    distanceKm?: number | null;
-    duration?: string | null;
-    landing?: string | null;
-    takeoff?: string | null;
-  } | null;
-};
-
-type CsvState = { data: Record<string, CsvRowState>; order: string[] };
-
 type UseOgProps = { client: StreamClient; logErr: (e: Error | unknown, type: NetworkRequestTypes) => void };
 
 type UseUploadProps = UseOgProps & {
@@ -98,7 +75,6 @@ const defaultOgState = { activeUrl: '', data: {}, order: [] };
 const defaultImageState = { data: {}, order: [] };
 const defaultFileState = { data: {}, order: [] };
 const defaultIgcState = { data: {}, order: [] };
-const defaultCsvState = { data: {}, order: [] };
 const MAX_BATCH_IMPORT_ITEMS = 25;
 const MAX_BATCH_IMPORT_PAYLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_PREVIEW_IMPORT_ITEMS = 200;
@@ -246,7 +222,6 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
   const [images, setImages] = useState<ImagesState>(defaultImageState);
   const [files, setFiles] = useState<FilesState>(defaultFileState);
   const [igcs, setIgcs] = useState<IgcState>(defaultIgcState);
-  const [csvRows, setCsvRows] = useState<CsvState>(defaultCsvState);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [sourceError, setSourceError] = useState<string | null>(null);
 
@@ -261,7 +236,6 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
   const uploadedFiles = orderedFiles.filter((upload) => upload.url);
 
   const orderedIgcs = igcs.order.map((id) => igcs.data[id]);
-  const orderedCsvRows = csvRows.order.map((id) => csvRows.data[id]);
 
   const uploadedIgcs = orderedIgcs.filter((upload) => upload && upload.state === 'finished' && upload.data);
 
@@ -296,31 +270,10 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     return acc;
   }, {});
 
-  const csvPreviewItems = orderedCsvRows.reduce((acc, row) => {
-    if (!row) return acc;
-    let status: 'parsing' | 'ready' | 'duplicate' | 'possible_duplicate' | 'error' = 'ready';
-    if (row.state === 'uploading') status = 'parsing';
-    if (row.state === 'failed') status = 'error';
-    if (row.dedupeStatus === 'duplicate') status = 'duplicate';
-    if (row.dedupeStatus === 'possible_duplicate') status = 'possible_duplicate';
-    acc[row.id] = {
-      id: row.id,
-      fileName: `${row.sourceFileName} [row ${row.rowIndex}]`,
-      filePath: row.sourceFilePath || null,
-      status,
-      summary: row.summary || null,
-      errorMessage: row.errorMessage || null,
-      duplicateExplanation: row.duplicateExplanation || null,
-    };
-    return acc;
-  }, {});
-
-  const flightImportOrder = [...igcs.order, ...csvRows.order];
-  const flightImportPreviewItems = flightImportOrder
-    .map((id) => igcsPreviewItems[id] || csvPreviewItems[id])
-    .filter(Boolean);
+  const flightImportOrder = [...igcs.order];
+  const flightImportPreviewItems = flightImportOrder.map((id) => igcsPreviewItems[id]).filter(Boolean);
   const possibleDuplicateOverrides = flightImportOrder.reduce((acc, id) => {
-    const item = igcs.data[id] || csvRows.data[id];
+    const item = igcs.data[id];
     if (item?.overridePossibleDuplicate) acc[id] = true;
     return acc;
   }, {});
@@ -329,7 +282,6 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     setImages(defaultImageState);
     setFiles(defaultFileState);
     setIgcs(defaultIgcState);
-    setCsvRows(defaultCsvState);
     setSourceError(null);
   }, []);
 
@@ -458,103 +410,21 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     return reformattedLines.join('\n');
   };
 
-  const addCsvRowsFromFile = useCallback(
-    async (file, sourcePath = null) => {
-      try {
-        const csvContent = await file.text();
-        const { rows, errors } = normalizeCsvRows(csvContent, file.name);
-        const basePath = sourcePath || file?.webkitRelativePath || file?.name || null;
-
-        setCsvRows((prevState) => {
-          const next = {
-            data: { ...prevState.data },
-            order: [...prevState.order],
-          };
-
-          rows.forEach((row) => {
-            const id = generateRandomId();
-            next.data[id] = {
-              id,
-              sourceFileName: file.name,
-              sourceFilePath: basePath,
-              rowIndex: row.csvRowIndex,
-              state: 'finished',
-              flightStats: row.flightStats,
-              summary: row.summary,
-              errorMessage: null,
-              igcFileName: row.igcFileName || null,
-            };
-            next.order.push(id);
-          });
-
-          errors.forEach((errorMessage) => {
-            const id = generateRandomId();
-            const rowMatch = String(errorMessage).match(/Row (\d+)/i);
-            next.data[id] = {
-              id,
-              sourceFileName: file.name,
-              sourceFilePath: basePath,
-              rowIndex: rowMatch ? Number(rowMatch[1]) : 0,
-              state: 'failed',
-              errorMessage,
-              summary: null,
-              igcFileName: null,
-            };
-            next.order.push(id);
-          });
-
-          return next;
-        });
-
-        if (!rows.length && errors.length) {
-          setUploadError(`Failed to import CSV ${file.name}`);
-        } else {
-          setUploadError(null);
-        }
-      } catch (error) {
-        setUploadError(`Failed to parse CSV file ${file.name}`);
-        logErr(error, 'upload-file');
-        setCsvRows((prevState) => {
-          const id = generateRandomId();
-          return {
-            data: {
-              ...prevState.data,
-              [id]: {
-                id,
-                sourceFileName: file.name || 'unknown.csv',
-                sourceFilePath: sourcePath || file?.name || null,
-                rowIndex: 0,
-                state: 'failed',
-                errorMessage: 'CSV parsing failed',
-                summary: null,
-                igcFileName: null,
-              },
-            },
-            order: [...prevState.order, id],
-          };
-        });
-      }
-    },
-    [logErr],
-  );
-
   const expandZipSource = useCallback(
     async (zipFile) => {
       const extractedFiles = await extractFilesFromZip(zipFile);
       if (!extractedFiles.length) {
-        throw new Error(`ZIP ${zipFile.name} contains no supported .igc or .csv files`);
+        throw new Error(`ZIP ${zipFile.name} contains no supported .igc files`);
       }
 
       for (let i = 0; i < extractedFiles.length; i += 1) {
         const extracted = extractedFiles[i];
         if (extracted.inferredType === 'igc') {
           await uploadNewIgc(extracted.file, extracted.path);
-        } else if (extracted.inferredType === 'csv') {
-          await addCsvRowsFromFile(extracted.file, extracted.path);
         }
       }
     },
-    [uploadNewIgc, addCsvRowsFromFile],
+    [uploadNewIgc],
   );
 
   const uploadImage = useCallback(async (id: string, img: ImageUploadState) => {
@@ -652,11 +522,23 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
         }
 
         const inferredType = inferImportFileType(file.name || '');
+        const isCsvFile = String(file?.name || '')
+          .toLowerCase()
+          .endsWith('.csv');
+        const isDirectoryUpload = Boolean(file?.webkitRelativePath);
         const sourcePath = file?.webkitRelativePath || file?.name || null;
 
         try {
-          if (!allowBulkImport && (inferredType === 'csv' || inferredType === 'zip')) {
-            setSourceError('Bulk CSV/ZIP import moved to Flight Log. Use Profile > Flight Log > Import flights.');
+          if (allowBulkImport && isCsvFile) {
+            setSourceError('CSV import is no longer supported. Use .igc or .zip flight files.');
+            continue;
+          }
+          if (allowBulkImport && isDirectoryUpload && !inferredType) {
+            setSourceError(`Skipping unsupported folder file: ${file.name}. Only .igc and .zip are supported.`);
+            continue;
+          }
+          if (!allowBulkImport && inferredType === 'zip') {
+            setSourceError('Bulk ZIP import moved to Flight Log. Use Profile > Flight Log > Import flights.');
             continue;
           }
           if (!allowBulkImport && inferredType === 'igc' && igcs.order.length >= 1) {
@@ -666,8 +548,6 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
 
           if (inferredType === 'igc') {
             await uploadNewIgc(file, sourcePath);
-          } else if (inferredType === 'csv') {
-            await addCsvRowsFromFile(file, sourcePath);
           } else if (inferredType === 'zip') {
             await expandZipSource(file);
           } else if (file instanceof File) {
@@ -680,16 +560,7 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
         }
       }
     },
-    [
-      allowBulkImport,
-      igcs.order.length,
-      uploadNewImage,
-      uploadNewIgc,
-      addCsvRowsFromFile,
-      expandZipSource,
-      uploadNewFile,
-      logErr,
-    ],
+    [allowBulkImport, igcs.order.length, uploadNewImage, uploadNewIgc, expandZipSource, uploadNewFile, logErr],
   );
 
   const removeImage = useCallback((id: string) => {
@@ -718,32 +589,11 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     });
   }, []);
 
-  const removeCsvRow = useCallback((id: string) => {
-    setCsvRows((prevState) => {
-      prevState.order = prevState.order.filter((oid) => id !== oid);
-      delete prevState.data[id];
-      return { ...prevState };
-    });
-  }, []);
-
   const removeImportItems = useCallback((ids: string[] = []) => {
     if (!ids.length) return;
     const idSet = new Set(ids.map((id) => String(id)));
 
     setIgcs((prevState) => {
-      const next = {
-        data: { ...prevState.data },
-        order: prevState.order.filter((id) => !idSet.has(String(id))),
-      };
-      prevState.order.forEach((id) => {
-        if (idSet.has(String(id))) {
-          delete next.data[id];
-        }
-      });
-      return next;
-    });
-
-    setCsvRows((prevState) => {
       const next = {
         data: { ...prevState.data },
         order: prevState.order.filter((id) => !idSet.has(String(id))),
@@ -786,38 +636,10 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
       });
       return next;
     });
-
-    setCsvRows((prevState) => {
-      const next = {
-        data: { ...prevState.data },
-        order: [...prevState.order],
-      };
-      prevState.order.forEach((id) => {
-        const classification = byId.get(String(id));
-        if (!classification || !next.data[id]) return;
-        const mappedStatus =
-          classification.classification === 'duplicate'
-            ? 'duplicate'
-            : classification.classification === 'possible_duplicate'
-            ? 'possible_duplicate'
-            : 'ready';
-        next.data[id] = {
-          ...next.data[id],
-          dedupeStatus: mappedStatus,
-          duplicateExplanation: classification.explanation || null,
-        };
-      });
-      return next;
-    });
   }, []);
 
   const togglePossibleDuplicateOverride = useCallback((id: string) => {
     setIgcs((prevState) => {
-      if (!prevState.data[id]) return prevState;
-      prevState.data[id].overridePossibleDuplicate = !prevState.data[id].overridePossibleDuplicate;
-      return { ...prevState };
-    });
-    setCsvRows((prevState) => {
       if (!prevState.data[id]) return prevState;
       prevState.data[id].overridePossibleDuplicate = !prevState.data[id].overridePossibleDuplicate;
       return { ...prevState };
@@ -848,13 +670,10 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     images,
     files,
     igcs,
-    csvRows,
     orderedImages,
     orderedFiles,
     orderedIgcs,
-    orderedCsvRows,
     igcsPreviewItems,
-    csvPreviewItems,
     flightImportOrder,
     flightImportPreviewItems,
     possibleDuplicateOverrides,
@@ -870,7 +689,6 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     removeFile,
     removeImage,
     removeIgc,
-    removeCsvRow,
     removeImportItems,
     applyImportClassifications,
     togglePossibleDuplicateOverride,
@@ -917,13 +735,10 @@ export function useStatusUpdateForm<
     images,
     files,
     igcs,
-    csvRows,
     orderedImages,
     orderedFiles,
     orderedIgcs,
-    orderedCsvRows,
     igcsPreviewItems,
-    csvPreviewItems,
     flightImportOrder,
     flightImportPreviewItems,
     possibleDuplicateOverrides,
@@ -939,7 +754,6 @@ export function useStatusUpdateForm<
     removeFile,
     removeImage,
     removeIgc,
-    removeCsvRow,
     removeImportItems,
     applyImportClassifications,
     togglePossibleDuplicateOverride,
@@ -960,106 +774,9 @@ export function useStatusUpdateForm<
   const [previewImportError, setPreviewImportError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const lastPreviewSignatureRef = useRef<string>('');
-  const csvToIgcPairings = useMemo(() => {
-    const igcNameToId = new Map();
-    orderedIgcs.forEach((igc) => {
-      if (!igc || igc.state !== 'finished' || !igc.data) return;
-      const baseName = normalizeBasename((igc.file as File)?.name || igc.filePath || '');
-      if (baseName && !igcNameToId.has(baseName)) {
-        igcNameToId.set(baseName, igc.id);
-      }
-    });
-
-    const byCsvId = {};
-    const byIgcId = {};
-    orderedCsvRows.forEach((row) => {
-      if (!row || row.state !== 'finished' || !row.flightStats || !row.igcFileName) return;
-      const baseName = normalizeBasename(row.igcFileName);
-      if (!baseName) return;
-      const matchedIgcId = igcNameToId.get(baseName);
-      if (!matchedIgcId) return;
-
-      const igc = igcs.data[matchedIgcId];
-      const { merged, consistencyErrors } = mergeCsvStatsIntoIgc(igc?.data || {}, row.flightStats || {});
-      const isConsistent = consistencyErrors.length === 0;
-
-      const pairing = {
-        csvId: row.id,
-        igcId: matchedIgcId,
-        mergedFlightStats: merged,
-        consistencyErrors,
-        isConsistent,
-      };
-      byCsvId[row.id] = pairing;
-      if (!byIgcId[matchedIgcId]) byIgcId[matchedIgcId] = [];
-      byIgcId[matchedIgcId].push(pairing);
-    });
-
-    return { byCsvId, byIgcId };
-  }, [orderedIgcs, orderedCsvRows, igcs.data]);
-
-  const pairedCsvRowIds = useMemo(
-    () =>
-      Object.values(csvToIgcPairings.byCsvId)
-        .filter((pairing) => pairing.isConsistent)
-        .map((pairing) => pairing.csvId),
-    [csvToIgcPairings],
-  );
-
-  const pairedCsvIdSet = useMemo(() => new Set(pairedCsvRowIds), [pairedCsvRowIds]);
-
-  const effectiveIgcStatsById = useMemo(() => {
-    const next = {};
-    orderedIgcs.forEach((igc) => {
-      if (!igc || !igc.data) return;
-      const pairings = csvToIgcPairings.byIgcId[igc.id] || [];
-      const consistentPairings = pairings.filter((pairing) => pairing.isConsistent);
-      if (!consistentPairings.length) {
-        next[igc.id] = igc.data;
-        return;
-      }
-
-      let mergedStats = igc.data;
-      consistentPairings.forEach((pairing) => {
-        mergedStats = pairing.mergedFlightStats || mergedStats;
-      });
-      next[igc.id] = mergedStats;
-    });
-    return next;
-  }, [orderedIgcs, csvToIgcPairings]);
-
-  const resolvedFlightImportPreviewItems = useMemo(
-    () =>
-      flightImportPreviewItems.map((item) => {
-        const pairing = csvToIgcPairings.byCsvId[item.id];
-        if (!pairing) return item;
-
-        if (pairing.isConsistent) {
-          const igcFile = igcs.data[pairing.igcId];
-          const igcName = (igcFile?.file as File)?.name || igcFile?.filePath || pairing.igcId;
-          return {
-            ...item,
-            status: 'duplicate',
-            duplicateExplanation: `Paired with IGC ${igcName}; CSV metadata will be merged into that import.`,
-          };
-        }
-
-        return {
-          ...item,
-          status: 'possible_duplicate',
-          duplicateExplanation: `CSV references IGC "${
-            csvRows.data[item.id]?.igcFileName || 'unknown'
-          }" but metadata differs (${pairing.consistencyErrors.join(
-            ', ',
-          )}). Review before importing as separate flight.`,
-        };
-      }),
-    [flightImportPreviewItems, csvToIgcPairings, igcs.data, csvRows.data],
-  );
 
   const previewCandidates = useMemo(() => {
     const candidates = [];
-
     orderedIgcs.forEach((igc) => {
       if (!igc || igc.state !== 'finished' || !igc.data) return;
       candidates.push({
@@ -1067,23 +784,11 @@ export function useStatusUpdateForm<
         type: 'igc',
         igcHash: igc.fingerprint || null,
         ingestMethod: igc?.data?.ingestMethod || igc?.data?.ingest_method || null,
-        flightStats: effectiveIgcStatsById[igc.id] || igc.data,
+        flightStats: igc.data,
       });
     });
-
-    orderedCsvRows.forEach((row) => {
-      if (!row || row.state !== 'finished' || !row.flightStats) return;
-      if (pairedCsvIdSet.has(row.id)) return;
-      candidates.push({
-        localId: row.id,
-        type: 'csv',
-        ingestMethod: row?.flightStats?.ingestMethod || row?.flightStats?.ingest_method || 'csv_import',
-        flightStats: row.flightStats,
-      });
-    });
-
     return candidates;
-  }, [orderedIgcs, orderedCsvRows, effectiveIgcStatsById, pairedCsvIdSet]);
+  }, [orderedIgcs]);
 
   const previewRequestItems = useMemo(
     () =>
@@ -1178,8 +883,8 @@ export function useStatusUpdateForm<
     };
   }, [appCtx.baseUrl, client.currentUser?.id, previewSignature, applyImportClassifications]);
 
-  const hasBulkImportMode = allowBulkImport && (orderedCsvRows.length > 0 || orderedIgcs.length > 1);
-  const importableFlightItemCount = resolvedFlightImportPreviewItems.filter((item) => {
+  const hasBulkImportMode = allowBulkImport && orderedIgcs.length > 1;
+  const importableFlightItemCount = flightImportPreviewItems.filter((item) => {
     if (item.status === 'ready') return true;
     if (item.status === 'possible_duplicate') {
       return Boolean(possibleDuplicateOverrides[item.id]);
@@ -1187,7 +892,7 @@ export function useStatusUpdateForm<
     return false;
   }).length;
   const showFlightImportConfirm =
-    hasBulkImportMode && resolvedFlightImportPreviewItems.length > 0 && importableFlightItemCount > 0;
+    hasBulkImportMode && flightImportPreviewItems.length > 0 && importableFlightItemCount > 0;
   const confirmFlightImportDisabled =
     importingFlights || previewingImports || importableFlightItemCount === 0 || Boolean(previewImportError);
 
@@ -1217,28 +922,8 @@ export function useStatusUpdateForm<
           igcHash: igc.fingerprint || null,
           igcContent,
           flightStats: {
-            ...(effectiveIgcStatsById[igc.id] || igc.data),
+            ...igc.data,
             ingestMethod: hasBulkImportMode ? 'bulk_igc' : 'manual_igc',
-          },
-        });
-      }
-
-      for (const row of orderedCsvRows) {
-        if (!row || row.state !== 'finished' || !row.flightStats) continue;
-        if (pairedCsvIdSet.has(row.id)) continue;
-        if (row.dedupeStatus === 'duplicate') continue;
-        if (row.dedupeStatus === 'possible_duplicate' && !row.overridePossibleDuplicate) {
-          continue;
-        }
-
-        payloadItems.push({
-          localId: row.id,
-          type: 'csv',
-          fileName: row.sourceFileName,
-          filePath: row.sourceFilePath || null,
-          flightStats: {
-            ...(row.flightStats || {}),
-            ingestMethod: 'csv_import',
           },
         });
       }
@@ -1294,14 +979,8 @@ export function useStatusUpdateForm<
       const resultItems = aggregate.items;
       const importedIds = resultItems.filter((item) => item.status === 'imported').map((item) => String(item.localId));
 
-      const importedSet = new Set(importedIds);
-      const pairedCsvIdsToRemove = Object.values(csvToIgcPairings.byCsvId)
-        .filter((pairing) => pairing.isConsistent && importedSet.has(String(pairing.igcId)))
-        .map((pairing) => String(pairing.csvId));
-      const idsToRemove = Array.from(new Set([...importedIds, ...pairedCsvIdsToRemove]));
-
-      if (idsToRemove.length) {
-        removeImportItems(idsToRemove);
+      if (importedIds.length) {
+        removeImportItems(importedIds);
       }
 
       const classifications = resultItems
@@ -1339,10 +1018,6 @@ export function useStatusUpdateForm<
     appCtx.baseUrl,
     client.currentUser?.id,
     orderedIgcs,
-    orderedCsvRows,
-    effectiveIgcStatsById,
-    pairedCsvIdSet,
-    csvToIgcPairings,
     possibleDuplicateOverrides,
     hasBulkImportMode,
     previewImportError,
@@ -1364,7 +1039,6 @@ export function useStatusUpdateForm<
   const canSubmit = () =>
     (() => {
       const hasSingleIgcReady =
-        orderedCsvRows.length === 0 &&
         orderedIgcs.length === 1 &&
         Boolean(orderedIgcs[0]) &&
         orderedIgcs[0].state !== 'uploading' &&
@@ -1375,7 +1049,6 @@ export function useStatusUpdateForm<
       return (
         !submitting &&
         hasObject &&
-        orderedCsvRows.length === 0 &&
         orderedIgcs.length <= 1 &&
         orderedImages.every((upload) => upload.state !== 'uploading') &&
         orderedFiles.every((upload) => upload.state !== 'uploading') &&
@@ -1674,13 +1347,10 @@ export function useStatusUpdateForm<
     files,
     images,
     igcs,
-    csvRows,
     orderedIgcs,
-    orderedCsvRows,
     igcsPreviewItems,
-    csvPreviewItems,
     flightImportOrder,
-    flightImportPreviewItems: resolvedFlightImportPreviewItems,
+    flightImportPreviewItems,
     possibleDuplicateOverrides,
     hasBulkImportMode,
     showFlightImportConfirm,
@@ -1704,7 +1374,7 @@ export function useStatusUpdateForm<
     removeFile,
     removeImage,
     removeIgc,
-    removeCsvRow,
+    removeImportItems,
     togglePossibleDuplicateOverride,
     onPaste,
     uploadError,

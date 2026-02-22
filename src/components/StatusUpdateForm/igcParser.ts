@@ -52,9 +52,9 @@ export interface FlightStatistics {
   freeDistanceAvgSpeed: number;
   freeLegDetails: LegDetail[];
   gliderType: string;
+  landingAltitude: number;
+  launchAltitude: number;
   maxAltitude: number;
-  launchAltitude?: number;
-  landingAltitude?: number;
   maxAltitudeGain: number;
   maxClimb: number;
   maxSink: number;

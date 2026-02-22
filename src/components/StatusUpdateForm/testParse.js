@@ -42,13 +42,37 @@ const formatDuration = (seconds) => {
   return `${hours}h ${minutes}m`;
 };
 
+const getAltitude = (fix) => fix.gpsAltitude ?? fix.pressureAltitude ?? 0;
+const SMOOTH_WINDOW_SECONDS = 10;
+
+function smoothAltitudeTimeWindow(fixes, windowSeconds) {
+  const windowMs = windowSeconds * 1000;
+  const result = [];
+  for (let i = 0; i < fixes.length; i++) {
+    const t = fixes[i].timestamp;
+    const tStart = t - windowMs / 2;
+    const tEnd = t + windowMs / 2;
+    let sum = 0;
+    let count = 0;
+    for (let j = 0; j < fixes.length; j++) {
+      if (fixes[j].timestamp >= tStart && fixes[j].timestamp <= tEnd) {
+        sum += getAltitude(fixes[j]);
+        count++;
+      }
+    }
+    result.push(count > 0 ? sum / count : getAltitude(fixes[i]));
+  }
+  return result;
+}
+
 const calculateMaxAltitudeGainAndDistance = (fixes) => {
   let maxAltitudeGain = 0;
   let totalDistance = 0;
+  const smoothed = smoothAltitudeTimeWindow(fixes, SMOOTH_WINDOW_SECONDS);
 
   for (let i = 1; i < fixes.length; i++) {
-    const altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
-    if (altitudeGain > 1) {
+    const altitudeGain = smoothed[i] - smoothed[i - 1];
+    if (altitudeGain > 0.5) {
       maxAltitudeGain += altitudeGain;
     }
 

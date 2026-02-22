@@ -37,8 +37,8 @@ const calculateMaxAltitudeGainAndDistance = (fixes) => {
 
   for (let i = 1; i < fixes.length; i++) {
     const altitudeGain = getAltitude(fixes[i]) - getAltitude(fixes[i - 1]);
-    // Threshold 0.5m filters GPS noise while capturing typical climbs (1-3 m/s)
-    if (altitudeGain > 0.5) {
+    // Threshold 1m filters GPS noise while aligning with apps like Sidekick
+    if (altitudeGain > 1) {
       maxAltitudeGain += altitudeGain;
     }
 
@@ -108,6 +108,8 @@ const extractFlightStatisticsTest = (result) => {
   const flightDuration = formatDuration(flightDurationSeconds);
 
   const maxAltitude = Math.max(...fixes.map((fix) => getAltitude(fix)));
+  const launchAltitude = getAltitude(fixes[0]);
+  const landingAltitude = getAltitude(fixes[fixes.length - 1]);
   const { maxAltitudeGain, totalDistance } = calculateMaxAltitudeGainAndDistance(fixes);
 
   const turnpointsDuration =
@@ -273,6 +275,8 @@ const extractFlightStatisticsTest = (result) => {
     maxClimb: parseFloat(maxClimb.toFixed(1)),
     maxSink: parseFloat((-maxSink).toFixed(1)),
     maxAltitude,
+    launchAltitude,
+    landingAltitude,
     maxAltitudeGain,
     gliderType,
     totalDistance: parseFloat(totalDistance.toFixed(2)),

@@ -48,7 +48,7 @@ const calculateMaxAltitudeGainAndDistance = (fixes) => {
 
   for (let i = 1; i < fixes.length; i++) {
     const altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
-    if (altitudeGain > 5) {
+    if (altitudeGain > 1) {
       maxAltitudeGain += altitudeGain;
     }
 

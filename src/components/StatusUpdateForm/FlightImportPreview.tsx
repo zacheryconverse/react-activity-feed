@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { LoadingIndicator } from 'react-file-utils';
 
 export type ImportPreviewStatus = 'parsing' | 'ready' | 'duplicate' | 'possible_duplicate' | 'error';
 
@@ -137,7 +136,7 @@ export const FlightImportPreview = ({
       <div className="raf-flight-import-preview__header">
         <div className="raf-flight-import-preview__title">Flight import preview</div>
         <div className="raf-flight-import-preview__counts">
-          <span>Will upload: {counts.willUpload}</span>
+          <span>New uploads: {counts.willUpload}</span>
           <span>Duplicates: {counts.duplicates}</span>
           {counts.possibleDuplicates > 0 && <span>Possible duplicates: {counts.possibleDuplicates}</span>}
           {counts.errors > 0 && <span>Errors: {counts.errors}</span>}
@@ -171,7 +170,7 @@ export const FlightImportPreview = ({
                 <div className="raf-flight-import-preview__status">
                   {isParsing && (
                     <span className="raf-flight-import-preview__spinner">
-                      <LoadingIndicator />
+                      <span className="raf-flight-import-preview__spinner-ring" aria-hidden="true" />
                     </span>
                   )}
                   <span

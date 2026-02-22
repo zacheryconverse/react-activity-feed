@@ -206,24 +206,17 @@
     justify-content: center;
     line-height: 0;
     width: 16px;
+  }
 
-    .raf-loading-indicator {
-      align-items: center;
-      background: transparent;
-      display: inline-flex;
-      height: 14px;
-      justify-content: center;
-      margin: 0;
-      padding: 0;
-      transform: none;
-      width: 14px;
-    }
-
-    .raf-loading-indicator__spinner {
-      border-top-color: #9fd5ac;
-      height: 12px;
-      width: 12px;
-    }
+  &__spinner-ring {
+    animation: raf-flight-import-spin 0.65s linear infinite;
+    border: 2px solid rgba(159, 213, 172, 0.25);
+    border-top-color: #9fd5ac;
+    border-radius: 50%;
+    box-sizing: border-box;
+    display: block;
+    height: 12px;
+    width: 12px;
   }
 
   &__actions {
@@ -307,4 +300,10 @@
   line-height: 1.45;
   margin: 8px 0 10px;
   padding: 10px 12px;
+}
+
+@keyframes raf-flight-import-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }

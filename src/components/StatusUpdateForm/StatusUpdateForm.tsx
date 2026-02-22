@@ -86,40 +86,48 @@ const FlightImportSection = ({
   onRemove: (id: string) => void;
   onRetry: (id: string) => void;
   state: StatusUpdateFormState;
-}) => (
-  <>
-    {state.flightImportPreviewItems?.length > 0 && (
-      <FlightImportPreview
-        items={state.flightImportPreviewItems}
-        onRemove={onRemove}
-        onRetry={onRetry}
-        onConfirm={state.confirmFlightImport}
-        showConfirm={allowBulkImport && state.showFlightImportConfirm}
-        confirmDisabled={state.confirmFlightImportDisabled}
-        confirmLabel={state.importingFlights ? 'Importing flights...' : 'Confirm import'}
-        possibleDuplicateOverrides={state.possibleDuplicateOverrides}
-        onTogglePossibleDuplicate={state.togglePossibleDuplicateOverride}
-      />
-    )}
-    {allowBulkImport &&
-      state.hasBulkImportMode &&
-      !state.previewingImports &&
-      !state.previewImportError &&
-      state.flightImportPreviewItems?.length > 0 &&
-      !state.showFlightImportConfirm && (
-        <div className="raf-flight-import-preview__results">
-          No flights selected to import. Add .igc files or remove skipped duplicates.
-        </div>
+}) => {
+  const summaryCounts = state.flightImportSummary?.counts;
+  const summaryParts = summaryCounts
+    ? [`Imported: ${summaryCounts.imported || 0}`, `Duplicates skipped: ${summaryCounts.duplicateSkipped || 0}`]
+    : null;
+
+  if (summaryParts && (summaryCounts?.possibleSkipped || 0) > 0) {
+    summaryParts.push(`Possible skipped: ${summaryCounts?.possibleSkipped || 0}`);
+  }
+  if (summaryParts && (summaryCounts?.errors || 0) > 0) {
+    summaryParts.push(`Errors: ${summaryCounts?.errors || 0}`);
+  }
+
+  return (
+    <>
+      {state.flightImportPreviewItems?.length > 0 && (
+        <FlightImportPreview
+          items={state.flightImportPreviewItems}
+          onRemove={onRemove}
+          onRetry={onRetry}
+          onConfirm={state.confirmFlightImport}
+          showConfirm={allowBulkImport && state.showFlightImportConfirm}
+          confirmDisabled={state.confirmFlightImportDisabled}
+          confirmLabel={state.importingFlights ? 'Importing flights...' : 'Confirm import'}
+          possibleDuplicateOverrides={state.possibleDuplicateOverrides}
+          onTogglePossibleDuplicate={state.togglePossibleDuplicateOverride}
+        />
       )}
-    {state.flightImportSummary?.counts && (
-      <div className="raf-flight-import-preview__results">
-        Imported: {state.flightImportSummary.counts.imported || 0} · Duplicates skipped:{' '}
-        {state.flightImportSummary.counts.duplicateSkipped || 0} · Possible skipped:{' '}
-        {state.flightImportSummary.counts.possibleSkipped || 0} · Errors: {state.flightImportSummary.counts.errors || 0}
-      </div>
-    )}
-  </>
-);
+      {allowBulkImport &&
+        state.hasBulkImportMode &&
+        !state.previewingImports &&
+        !state.previewImportError &&
+        state.flightImportPreviewItems?.length > 0 &&
+        !state.showFlightImportConfirm && (
+          <div className="raf-flight-import-preview__results">
+            No flights selected to import. Add .igc files or remove skipped duplicates.
+          </div>
+        )}
+      {summaryParts && <div className="raf-flight-import-preview__results">{summaryParts.join(' · ')}</div>}
+    </>
+  );
+};
 
 const OgSection = ({ state }: { state: StatusUpdateFormState }) => (
   <>
@@ -249,7 +257,7 @@ export function StatusUpdateForm<
   ) as string[];
   const duplicateSingleIgcNotice =
     state.orderedIgcs.length === 1 && state.orderedIgcs[0]?.dedupeStatus === 'duplicate'
-      ? 'This flight is already in your logbook. Post it if you like: it will NOT create another logbook flight and will NOT change your stats.'
+      ? 'Already in your logbook. Post it if you want. It will NOT create another logbook flight, and it will NOT change your stats.'
       : null;
 
   return (
@@ -265,16 +273,7 @@ export function StatusUpdateForm<
               </div>
             ))}
             {duplicateSingleIgcNotice && (
-              <div
-                className="raf-flight-import-preview__results"
-                style={{
-                  background: 'rgba(90, 200, 120, 0.08)',
-                  border: '1px solid rgba(90, 200, 120, 0.35)',
-                  color: '#7adf96',
-                }}
-              >
-                {duplicateSingleIgcNotice}
-              </div>
+              <div className="raf-flight-import-preview__dedupe-note">{duplicateSingleIgcNotice}</div>
             )}
             <div style={{ display: 'flex' }}>
               {state.userData.profileImage && (

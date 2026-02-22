@@ -7,7 +7,10 @@ export type ImportPreviewSummary = {
   date?: string | Date | null;
   distanceKm?: number | null;
   duration?: string | null;
+  freeDistanceKm?: number | null;
   landing?: string | null;
+  routeDistanceKm?: number | null;
+  score?: number | null;
   takeoff?: string | null;
 };
 
@@ -68,11 +71,23 @@ function formatSummary(summary?: ImportPreviewSummary | null) {
   const dateLabel = formatDate(summary.date);
   const takeoffLabel = normalizeLocationLabel(summary.takeoff);
   const landingLabel = normalizeLocationLabel(summary.landing);
+  const freeDistanceKm = Number.isFinite(summary.freeDistanceKm as number) ? Number(summary.freeDistanceKm) : null;
+  let fallbackDistanceKm: number | null = null;
+  if (Number.isFinite(summary.distanceKm as number)) {
+    fallbackDistanceKm = Number(summary.distanceKm);
+  } else if (Number.isFinite(summary.routeDistanceKm as number)) {
+    fallbackDistanceKm = Number(summary.routeDistanceKm);
+  }
+  const score = Number.isFinite(summary.score as number) ? Number(summary.score) : null;
+
   if (dateLabel) parts.push(dateLabel);
   if (summary.duration) parts.push(summary.duration);
-  if (Number.isFinite(summary.distanceKm as number)) {
-    parts.push(`${Number(summary.distanceKm).toFixed(1)} km`);
+  if (freeDistanceKm !== null) {
+    parts.push(`Free ${freeDistanceKm.toFixed(1)} km`);
+  } else if (fallbackDistanceKm !== null) {
+    parts.push(`${fallbackDistanceKm.toFixed(1)} km`);
   }
+  if (score !== null) parts.push(`${score.toFixed(1)} pts`);
   if (takeoffLabel) parts.push(`TO: ${takeoffLabel}`);
   if (landingLabel) parts.push(`LD: ${landingLabel}`);
   return parts.length ? parts.join(' · ') : 'No parsed summary';
@@ -124,8 +139,8 @@ export const FlightImportPreview = ({
         <div className="raf-flight-import-preview__counts">
           <span>Will upload: {counts.willUpload}</span>
           <span>Duplicates: {counts.duplicates}</span>
-          <span>Possible duplicates: {counts.possibleDuplicates}</span>
-          <span>Errors: {counts.errors}</span>
+          {counts.possibleDuplicates > 0 && <span>Possible duplicates: {counts.possibleDuplicates}</span>}
+          {counts.errors > 0 && <span>Errors: {counts.errors}</span>}
         </div>
       </div>
 
@@ -192,7 +207,11 @@ export const FlightImportPreview = ({
                   </button>
                 )}
                 {onRemove && !isParsing && (
-                  <button type="button" className="raf-flight-import-preview__action" onClick={() => onRemove(item.id)}>
+                  <button
+                    type="button"
+                    className="raf-flight-import-preview__action raf-flight-import-preview__action--danger"
+                    onClick={() => onRemove(item.id)}
+                  >
                     Remove
                   </button>
                 )}

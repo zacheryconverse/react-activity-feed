@@ -249,6 +249,8 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     if (upload.state === 'finished' && stats) status = 'ready';
     if (upload.dedupeStatus === 'duplicate') status = 'duplicate';
     if (upload.dedupeStatus === 'possible_duplicate') status = 'possible_duplicate';
+    const freeDistanceKm = Number.isFinite(stats?.freeDistance as number) ? Number(stats?.freeDistance) : null;
+    const routeDistanceKm = Number.isFinite(stats?.routeDistance as number) ? Number(stats?.routeDistance) : null;
 
     acc[upload.id] = {
       id: upload.id,
@@ -257,10 +259,13 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
       status,
       summary: stats
         ? {
+            freeDistanceKm,
+            routeDistanceKm,
             date: stats.date || null,
-            distanceKm: Number.isFinite(stats.routeDistance as number) ? Number(stats.routeDistance) : null,
+            distanceKm: freeDistanceKm !== null ? freeDistanceKm : routeDistanceKm,
             duration: stats.flightDuration || null,
             landing: lastPoint?.label || null,
+            score: Number.isFinite(stats.score as number) ? Number(stats.score) : null,
             takeoff: firstPoint?.label || null,
           }
         : null,

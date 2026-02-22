@@ -232,6 +232,10 @@
     }
   }
 
+  &__action--danger {
+    color: #f3a4a4;
+  }
+
   &__details {
     background: #0d0d0d;
     border: 1px solid #1f1f1f;
@@ -278,4 +282,15 @@
   font-size: 12px;
   margin: 8px 0 4px;
   line-height: 1.4;
+}
+
+.raf-flight-import-preview__dedupe-note {
+  background: rgba(229, 176, 89, 0.12);
+  border: 1px solid rgba(229, 176, 89, 0.35);
+  border-radius: 8px;
+  color: #f5d59a;
+  font-size: 12px;
+  line-height: 1.45;
+  margin: 8px 0 10px;
+  padding: 10px 12px;
 }

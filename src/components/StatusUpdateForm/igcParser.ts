@@ -116,13 +116,16 @@ const formatDuration = (seconds: number) => {
   return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
 };
 
+const getAltitude = (fix: Fix) => fix.gpsAltitude ?? (fix as Fix & { pressureAltitude?: number }).pressureAltitude ?? 0;
+
 const calculateMaxAltitudeGainAndDistance = (fixes: Fix[]) => {
   let maxAltitudeGain = 0;
   let totalDistance = 0;
 
   for (let i = 1; i < fixes.length; i++) {
-    const altitudeGain = fixes[i].gpsAltitude - fixes[i - 1].gpsAltitude;
-    if (altitudeGain > 5) {
+    const altitudeGain = getAltitude(fixes[i]) - getAltitude(fixes[i - 1]);
+    // Threshold 0.5m filters GPS noise while capturing typical climbs (1-3 m/s)
+    if (altitudeGain > 0.5) {
       maxAltitudeGain += altitudeGain;
     }
 
@@ -355,7 +358,7 @@ export const extractFlightStatistics = (
   const flightDurationSeconds = (landingTime - launchTime) / 1000;
   const flightDuration = formatDuration(flightDurationSeconds);
 
-  const maxAltitude = Math.max(...fixes.map((fix) => fix.gpsAltitude));
+  const maxAltitude = Math.max(...fixes.map((fix) => getAltitude(fix)));
   const { maxAltitudeGain, totalDistance } = calculateMaxAltitudeGainAndDistance(fixes);
 
   const turnpointsDuration =
@@ -364,7 +367,7 @@ export const extractFlightStatistics = (
   const turnpointsDurationInHours = turnpointsDuration / 3600000;
 
   const { maxClimb, maxSink } = calculateMaxRates(
-    fixes.map((fix) => fix.gpsAltitude),
+    fixes.map((fix) => getAltitude(fix)),
     fixes.map((fix) => fix.timestamp),
   );
 

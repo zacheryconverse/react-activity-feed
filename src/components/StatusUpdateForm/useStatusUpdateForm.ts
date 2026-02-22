@@ -80,6 +80,25 @@ const MAX_BATCH_IMPORT_PAYLOAD_BYTES = 4 * 1024 * 1024;
 const MAX_PREVIEW_IMPORT_ITEMS = 200;
 const MAX_PREVIEW_IMPORT_PAYLOAD_BYTES = 256 * 1024;
 
+const getAccessToken = () => {
+  if (typeof localStorage === 'undefined') return null;
+  try {
+    const tokens = JSON.parse(localStorage.getItem('auth_tokens') || '{}');
+    return tokens?.accessToken || null;
+  } catch (_error) {
+    return null;
+  }
+};
+
+const buildAuthHeaders = (headers: Record<string, string> = {}) => {
+  const token = getAccessToken();
+  if (!token) return headers;
+  return {
+    ...headers,
+    Authorization: `Bearer ${token}`,
+  };
+};
+
 const useTextArea = () => {
   const [text, setText] = useState('');
   const [curser, setCurser] = useState<number | null>(null);
@@ -855,10 +874,16 @@ export function useStatusUpdateForm<
 
         const aggregatedItems = [];
         for (const chunk of chunks) {
-          const response = await axios.post(`${appCtx.baseUrl}/auth/flight-import/preview`, {
-            userId: activeUserId,
-            items: chunk,
-          });
+          const response = await axios.post(
+            `${appCtx.baseUrl}/auth/flight-import/preview`,
+            {
+              userId: activeUserId,
+              items: chunk,
+            },
+            {
+              headers: buildAuthHeaders(),
+            },
+          );
           aggregatedItems.push(...(response.data?.items || []));
         }
         if (cancelled) return;
@@ -961,14 +986,20 @@ export function useStatusUpdateForm<
       for (const chunk of chunks) {
         const chunkIds = new Set(chunk.map((item) => String(item.localId)));
         const chunkForceIds = forcePossibleDuplicateIds.filter((id) => chunkIds.has(String(id)));
-        const response = await axios.post(`${appCtx.baseUrl}/auth/flight-import/batch`, {
-          bulk: hasBulkImportMode || chunks.length > 1,
-          forcePossibleDuplicateIds: chunkForceIds,
-          items: chunk,
-          sessionId: aggregate.sessionId,
-          source: hasBulkImportMode ? 'bulk_manual' : 'manual_single',
-          userId: activeUserId,
-        });
+        const response = await axios.post(
+          `${appCtx.baseUrl}/auth/flight-import/batch`,
+          {
+            bulk: hasBulkImportMode || chunks.length > 1,
+            forcePossibleDuplicateIds: chunkForceIds,
+            items: chunk,
+            sessionId: aggregate.sessionId,
+            source: hasBulkImportMode ? 'bulk_manual' : 'manual_single',
+            userId: activeUserId,
+          },
+          {
+            headers: buildAuthHeaders(),
+          },
+        );
 
         const responseItems = response.data?.items || [];
         const responseCounts = response.data?.counts || {};
@@ -1104,7 +1135,7 @@ export function useStatusUpdateForm<
       }
 
       const response = await axios.post(`${appCtx.baseUrl}/auth/upload-igc`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: buildAuthHeaders({ 'Content-Type': 'multipart/form-data' }),
       });
       if (!response?.data?.duplicate) {
         flightId = response.data.flightId;

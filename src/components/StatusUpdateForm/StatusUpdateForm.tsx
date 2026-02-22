@@ -257,7 +257,7 @@ export function StatusUpdateForm<
   ) as string[];
   const duplicateSingleIgcNotice =
     state.orderedIgcs.length === 1 && state.orderedIgcs[0]?.dedupeStatus === 'duplicate'
-      ? 'Already in your logbook. Post it if you want. It will NOT create another logbook flight, and it will NOT change your stats.'
+      ? 'This flight is already in your logbook. You can still post this flight. It will NOT create a duplicate logbook entry and will NOT change your stats.'
       : null;
 
   return (

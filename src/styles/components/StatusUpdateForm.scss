@@ -202,13 +202,27 @@
   &__spinner {
     align-items: center;
     display: inline-flex;
-    height: 14px;
+    height: 16px;
     justify-content: center;
-    width: 14px;
+    line-height: 0;
+    width: 16px;
 
     .raf-loading-indicator {
+      align-items: center;
+      background: transparent;
+      display: inline-flex;
+      height: 14px;
+      justify-content: center;
       margin: 0;
-      transform: scale(0.55);
+      padding: 0;
+      transform: none;
+      width: 14px;
+    }
+
+    .raf-loading-indicator__spinner {
+      border-top-color: #9fd5ac;
+      height: 12px;
+      width: 12px;
     }
   }
 

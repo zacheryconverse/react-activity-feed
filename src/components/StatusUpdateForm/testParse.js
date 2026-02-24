@@ -165,10 +165,22 @@ const extractFlightStatistics = (result) => {
   const turnpointsDurationInHours = turnpointsDuration / 3600000;
   const avgSpeed = (distance / turnpointsDurationInHours).toFixed(2); // km/h
 
-  const { maxClimb, maxSink } = calculateMaxRates(
+  let { maxClimb, maxSink } = calculateMaxRates(
     fixes.map((fix) => fix.gpsAltitude),
     fixes.map((fix) => fix.timestamp),
+    30,
   );
+  if (maxClimb === -Infinity) {
+    const relaxed = calculateMaxRates(
+      fixes.map((fix) => fix.gpsAltitude),
+      fixes.map((fix) => fix.timestamp),
+      5,
+    );
+    if (relaxed.maxClimb > -Infinity) {
+      maxClimb = relaxed.maxClimb;
+      maxSink = relaxed.maxSink;
+    }
+  }
 
   const points = [
     {

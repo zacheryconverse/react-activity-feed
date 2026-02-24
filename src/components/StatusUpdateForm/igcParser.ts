@@ -394,10 +394,22 @@ export const extractFlightStatistics = (
     (cp ? fixes[cp.out.r].timestamp - fixes[cp.in.r].timestamp : 0);
   const turnpointsDurationInHours = turnpointsDuration / 3600000;
 
-  const { maxClimb, maxSink } = calculateMaxRates(
+  let { maxClimb, maxSink } = calculateMaxRates(
     fixes.map((fix) => getAltitude(fix)),
     fixes.map((fix) => fix.timestamp),
+    30,
   );
+  if (maxClimb === -Infinity) {
+    const relaxed = calculateMaxRates(
+      fixes.map((fix) => getAltitude(fix)),
+      fixes.map((fix) => fix.timestamp),
+      5,
+    );
+    if (relaxed.maxClimb > -Infinity) {
+      maxClimb = relaxed.maxClimb;
+      maxSink = relaxed.maxSink;
+    }
+  }
 
   const startPoint = fixes[0];
   const endPoint = fixes[fixes.length - 1];

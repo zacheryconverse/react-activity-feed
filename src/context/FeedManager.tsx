@@ -302,7 +302,8 @@ export class FeedManager<
     this.setState((prevState) => {
       let { activities } = prevState;
       const { reactionIdToPaths } = prevState;
-      for (const path of this.getActivityPaths(activity)) {
+      const activityPaths = this.getActivityPaths(activity) || [];
+      for (const path of activityPaths) {
         this.removeFoundReactionIdPaths(activities.getIn(path).toJS(), reactionIdToPaths, path);
 
         activities = activities
@@ -338,14 +339,27 @@ export class FeedManager<
     togglingReactions[activity.id] = true;
     this.state.reactionsBeingToggled[kind] = togglingReactions;
 
-    const currentReactions = this.state.activities.getIn(
-      [...this.getActivityPaths(activity)[0], 'own_reactions', kind],
-      immutable.List(),
-    );
+    const activityPaths = this.getActivityPaths(activity) || [];
+    let last;
 
-    const last = currentReactions.last();
+    if (activityPaths.length > 0) {
+      const currentReactions = this.state.activities.getIn(
+        [...activityPaths[0], 'own_reactions', kind],
+        immutable.List(),
+      );
+      last = currentReactions.last();
+    } else {
+      // Activity not in feed state (e.g. logbook activity fetched by ID) - use own_reactions from activity
+      const ownReactions = (activity as EnrichedActivity<UT, AT, CT, RT, CRT>).own_reactions?.[kind];
+      const myReaction = Array.isArray(ownReactions)
+        ? ownReactions.find((r: { user?: { id?: string } }) => r?.user?.id === this.props.client?.userId)
+        : undefined;
+      last = myReaction ? immutable.fromJS(myReaction) : null;
+    }
+
     if (last) {
-      await this.onRemoveReaction(kind, activity, last.get('id'), options);
+      const reactionId = immutable.isImmutable(last) ? last.get('id') : (last as { id?: string }).id;
+      await this.onRemoveReaction(kind, activity, reactionId, options);
     } else {
       await this.onAddReaction(kind, activity, data, options);
     }

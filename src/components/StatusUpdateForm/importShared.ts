@@ -18,6 +18,21 @@ export const toNumberOrNull = (value) => {
   return Number.isFinite(parsed) ? parsed : null;
 };
 
+/** Format HH:MM[:SS] to "h:mm AM/PM" (no seconds). Returns null for invalid input. */
+export const formatTimeToAmPm = (timeString) => {
+  if (!timeString || typeof timeString !== 'string') return null;
+  const match = timeString.trim().match(/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/);
+  if (!match) return null;
+  const hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  if (!Number.isFinite(hours) || !Number.isFinite(minutes) || hours < 0 || hours > 23 || minutes < 0 || minutes > 59) {
+    return null;
+  }
+  const hour12 = hours % 12 || 12;
+  const amPm = hours >= 12 ? 'PM' : 'AM';
+  return `${hour12}:${String(minutes).padStart(2, '0')} ${amPm}`;
+};
+
 export const parseDurationSeconds = (value) => {
   if (value === null || value === undefined) return null;
   if (typeof value === 'number' && Number.isFinite(value)) return value;

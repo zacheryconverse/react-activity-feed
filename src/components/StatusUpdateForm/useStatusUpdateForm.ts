@@ -285,6 +285,7 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
             duration: stats.flightDuration || null,
             landing: lastPoint?.label || null,
             score: Number.isFinite(stats.score as number) ? Number(stats.score) : null,
+            startTime: firstPoint?.time || null,
             takeoff: firstPoint?.label || null,
           }
         : null,
@@ -700,6 +701,7 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     igcsPreviewItems,
     flightImportOrder,
     flightImportPreviewItems,
+    displayFlightImportPreviewItems,
     possibleDuplicateOverrides,
     uploadedImages,
     uploadedFiles,
@@ -765,6 +767,7 @@ export function useStatusUpdateForm<
     igcsPreviewItems,
     flightImportOrder,
     flightImportPreviewItems,
+    displayFlightImportPreviewItems,
     possibleDuplicateOverrides,
     uploadedImages,
     uploadedFiles,
@@ -914,6 +917,15 @@ export function useStatusUpdateForm<
   }, [appCtx.baseUrl, client.currentUser?.id, previewSignature, applyImportClassifications]);
 
   const hasBulkImportMode = allowBulkImport && orderedIgcs.length > 1;
+  const displayFlightImportPreviewItems = useMemo(
+    () =>
+      previewingImports
+        ? flightImportPreviewItems.map((item) =>
+            item.status === 'ready' ? { ...item, status: 'comparing' as const } : item,
+          )
+        : flightImportPreviewItems,
+    [flightImportPreviewItems, previewingImports],
+  );
   const importableFlightItemCount = flightImportPreviewItems.filter((item) => {
     if (item.status === 'ready') return true;
     if (item.status === 'possible_duplicate') {
@@ -1387,6 +1399,7 @@ export function useStatusUpdateForm<
     igcsPreviewItems,
     flightImportOrder,
     flightImportPreviewItems,
+    displayFlightImportPreviewItems,
     possibleDuplicateOverrides,
     hasBulkImportMode,
     showFlightImportConfirm,

@@ -88,6 +88,29 @@
     justify-content: flex-end;
   }
 
+  &__reassurance {
+    color: #a8a8a8;
+    font-size: 12px;
+    margin: 0 12px 10px;
+    line-height: 1.4;
+  }
+
+  &__progress {
+    color: #9fd5ac;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 0 12px 10px;
+    line-height: 1.4;
+  }
+
+  &__success {
+    color: #9fd5ac;
+    font-size: 12px;
+    font-weight: 600;
+    margin: 0 12px 10px;
+    line-height: 1.4;
+  }
+
   &__list {
     list-style: none;
     margin: 0;
@@ -193,30 +216,37 @@
     background: rgba(116, 45, 45, 0.24);
   }
 
-  &__status-tag--parsing {
+  &__status-tag--parsing,
+  &__status-tag--comparing {
     border-color: #303030;
     color: #b4b4b4;
     background: #161616;
   }
 
   &__spinner {
-    align-items: center;
     display: inline-flex;
-    height: 16px;
+    align-items: center;
     justify-content: center;
-    line-height: 0;
-    width: 16px;
+    flex-shrink: 0;
+    margin-right: 6px;
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    min-height: 12px;
   }
 
-  &__spinner-ring {
-    animation: raf-flight-import-spin 0.65s linear infinite;
+  &__spinner::before {
+    content: '';
+    display: block;
+    width: 12px;
+    height: 12px;
+    min-width: 12px;
+    min-height: 12px;
     border: 2px solid rgba(159, 213, 172, 0.25);
     border-top-color: #9fd5ac;
     border-radius: 50%;
     box-sizing: border-box;
-    display: block;
-    height: 12px;
-    width: 12px;
+    animation: raf-flight-import-spin 0.65s linear infinite;
   }
 
   &__actions {

@@ -1,6 +1,9 @@
+/* eslint-disable sonarjs/cognitive-complexity */
 import React, { useMemo, useState } from 'react';
 
-export type ImportPreviewStatus = 'parsing' | 'ready' | 'duplicate' | 'possible_duplicate' | 'error';
+import { formatTimeToAmPm } from './importShared';
+
+export type ImportPreviewStatus = 'parsing' | 'comparing' | 'ready' | 'duplicate' | 'possible_duplicate' | 'error';
 
 export type ImportPreviewSummary = {
   date?: string | Date | null;
@@ -10,6 +13,7 @@ export type ImportPreviewSummary = {
   landing?: string | null;
   routeDistanceKm?: number | null;
   score?: number | null;
+  startTime?: string | null;
   takeoff?: string | null;
 };
 
@@ -36,6 +40,7 @@ export type FlightImportPreviewProps = {
 };
 
 const STATUS_LABELS: Record<ImportPreviewStatus, string> = {
+  comparing: 'Comparing',
   duplicate: 'Duplicate',
   error: 'Error',
   parsing: 'Parsing',
@@ -68,6 +73,10 @@ function formatSummary(summary?: ImportPreviewSummary | null) {
   if (!summary) return 'No parsed summary';
   const parts: string[] = [];
   const dateLabel = formatDate(summary.date);
+  const timeFormatted = summary.startTime?.match(/^\d{1,2}:\d{2} [AP]M$/i)
+    ? summary.startTime
+    : formatTimeToAmPm(summary.startTime);
+  const dateWithTime = dateLabel && timeFormatted ? `${dateLabel} · ${timeFormatted}` : dateLabel;
   const takeoffLabel = normalizeLocationLabel(summary.takeoff);
   const landingLabel = normalizeLocationLabel(summary.landing);
   const freeDistanceKm = Number.isFinite(summary.freeDistanceKm as number) ? Number(summary.freeDistanceKm) : null;
@@ -79,12 +88,11 @@ function formatSummary(summary?: ImportPreviewSummary | null) {
   }
   const score = Number.isFinite(summary.score as number) ? Number(summary.score) : null;
 
-  if (dateLabel) parts.push(dateLabel);
+  if (dateWithTime) parts.push(dateWithTime);
   if (summary.duration) parts.push(summary.duration);
-  if (freeDistanceKm !== null) {
-    parts.push(`Free ${freeDistanceKm.toFixed(1)} km`);
-  } else if (fallbackDistanceKm !== null) {
-    parts.push(`${fallbackDistanceKm.toFixed(1)} km`);
+  if (freeDistanceKm !== null || fallbackDistanceKm !== null) {
+    const km = freeDistanceKm ?? fallbackDistanceKm;
+    if (km !== null) parts.push(`${km.toFixed(1)} km`);
   }
   if (score !== null) parts.push(`${score.toFixed(1)} pts`);
   if (takeoffLabel) parts.push(`TO: ${takeoffLabel}`);
@@ -116,6 +124,8 @@ export const FlightImportPreview = ({
     items.forEach((item) => {
       if (item.status === 'ready') {
         next.willUpload += 1;
+      } else if (item.status === 'comparing') {
+        // not counted until dedupe returns
       } else if (item.status === 'duplicate') {
         next.duplicates += 1;
       } else if (item.status === 'possible_duplicate') {
@@ -131,6 +141,9 @@ export const FlightImportPreview = ({
 
   if (!items.length) return null;
 
+  const isComparing = items.some((i) => i.status === 'comparing');
+  const comparisonComplete = !isComparing && !items.some((i) => i.status === 'parsing');
+
   return (
     <div className="raf-flight-import-preview">
       <div className="raf-flight-import-preview__header">
@@ -143,6 +156,22 @@ export const FlightImportPreview = ({
         </div>
       </div>
 
+      <p className="raf-flight-import-preview__reassurance">
+        We compare each flight with your logbook so you never get duplicate entries.
+      </p>
+
+      {isComparing && (
+        <p className="raf-flight-import-preview__progress" role="status">
+          Comparing {items.length} flight{items.length !== 1 ? 's' : ''} with your logbook…
+        </p>
+      )}
+
+      {comparisonComplete && (
+        <p className="raf-flight-import-preview__success" role="status">
+          ✓ Compared with your logbook
+        </p>
+      )}
+
       <ol className="raf-flight-import-preview__list">
         {items.map((item) => {
           const isExpanded = Boolean(expandedRows[item.id]);
@@ -152,6 +181,7 @@ export const FlightImportPreview = ({
             hasDetails;
           const isPossible = item.status === 'possible_duplicate';
           const isParsing = item.status === 'parsing';
+          const isComparingItem = item.status === 'comparing';
           const isError = item.status === 'error';
 
           return (
@@ -168,10 +198,8 @@ export const FlightImportPreview = ({
                   <div className="raf-flight-import-preview__summary">{formatSummary(item.summary)}</div>
                 </div>
                 <div className="raf-flight-import-preview__status">
-                  {isParsing && (
-                    <span className="raf-flight-import-preview__spinner">
-                      <span className="raf-flight-import-preview__spinner-ring" aria-hidden="true" />
-                    </span>
+                  {(isParsing || isComparingItem) && (
+                    <span className="raf-flight-import-preview__spinner" aria-hidden="true" />
                   )}
                   <span
                     className={`raf-flight-import-preview__status-tag raf-flight-import-preview__status-tag--${item.status}`}
@@ -205,7 +233,7 @@ export const FlightImportPreview = ({
                     Retry
                   </button>
                 )}
-                {onRemove && !isParsing && (
+                {onRemove && !isParsing && !isComparingItem && (
                   <button
                     type="button"
                     className="raf-flight-import-preview__action raf-flight-import-preview__action--danger"

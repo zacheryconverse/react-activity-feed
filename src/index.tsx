@@ -51,7 +51,11 @@ export * from './components/EmojiPicker';
 export * from './components/Title';
 export * from './components/Panel';
 export { extractFilesFromZip, hashIgcContent, inferImportFileType } from './components/StatusUpdateForm/importParsers';
-export { buildPreviewFlightStats, chunkItemsForPayload } from './components/StatusUpdateForm/importShared';
+export {
+  buildPreviewFlightStats,
+  chunkItemsForPayload,
+  formatTimeToAmPm,
+} from './components/StatusUpdateForm/importShared';
 export {
   extractFlightStatistics,
   extractIgcCompetitionClass,

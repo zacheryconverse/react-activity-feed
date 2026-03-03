@@ -103,7 +103,7 @@ const FlightImportSection = ({
     <>
       {state.flightImportPreviewItems?.length > 0 && (
         <FlightImportPreview
-          items={state.flightImportPreviewItems}
+          items={state.displayFlightImportPreviewItems ?? state.flightImportPreviewItems}
           onRemove={onRemove}
           onRetry={onRetry}
           onConfirm={state.confirmFlightImport}

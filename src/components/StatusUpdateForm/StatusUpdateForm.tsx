@@ -88,16 +88,8 @@ const FlightImportSection = ({
   state: StatusUpdateFormState;
 }) => {
   const summaryCounts = state.flightImportSummary?.counts;
-  const summaryParts = summaryCounts
-    ? [`Imported: ${summaryCounts.imported || 0}`, `Duplicates skipped: ${summaryCounts.duplicateSkipped || 0}`]
-    : null;
-
-  if (summaryParts && (summaryCounts?.possibleSkipped || 0) > 0) {
-    summaryParts.push(`Possible skipped: ${summaryCounts?.possibleSkipped || 0}`);
-  }
-  if (summaryParts && (summaryCounts?.errors || 0) > 0) {
-    summaryParts.push(`Errors: ${summaryCounts?.errors || 0}`);
-  }
+  const importedCount = summaryCounts?.imported ?? 0;
+  const showImportResult = summaryCounts && importedCount > 0;
 
   return (
     <>
@@ -121,10 +113,14 @@ const FlightImportSection = ({
         state.flightImportPreviewItems?.length > 0 &&
         !state.showFlightImportConfirm && (
           <div className="raf-flight-import-preview__results">
-            No flights selected to import. Add .igc files or remove skipped duplicates.
+            Add a flight file or choose &quot;Import anyway&quot; for possible duplicates.
           </div>
         )}
-      {summaryParts && <div className="raf-flight-import-preview__results">{summaryParts.join(' · ')}</div>}
+      {showImportResult && (
+        <div className="raf-flight-import-preview__results">
+          {importedCount === 1 ? 'Flight added' : `Imported: ${importedCount}`}
+        </div>
+      )}
     </>
   );
 };

@@ -79,31 +79,7 @@
     font-weight: 700;
   }
 
-  &__counts {
-    color: #9f9f9f;
-    display: flex;
-    gap: 10px;
-    font-size: 12px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
-  }
-
-  &__reassurance {
-    color: #a8a8a8;
-    font-size: 12px;
-    margin: 0 12px 10px;
-    line-height: 1.4;
-  }
-
   &__progress {
-    color: #9fd5ac;
-    font-size: 12px;
-    font-weight: 600;
-    margin: 0 12px 10px;
-    line-height: 1.4;
-  }
-
-  &__success {
     color: #9fd5ac;
     font-size: 12px;
     font-weight: 600;
@@ -114,19 +90,18 @@
   &__list {
     list-style: none;
     margin: 0;
-    max-height: 280px;
+    padding: 0 12px 12px;
+    display: grid;
+    gap: 8px;
+    max-height: 320px;
     overflow: auto;
-    padding: 0;
   }
 
   &__item {
-    border-bottom: 1px solid #1f1f1f;
+    border: 1px solid #272727;
+    border-radius: 10px;
     padding: 10px 12px;
-    background: #101010;
-
-    &:last-child {
-      border-bottom: none;
-    }
+    background: #111;
   }
 
   &__item--error {
@@ -141,34 +116,31 @@
     background: #14130f;
   }
 
-  &__row {
+  &__row-head {
     display: flex;
-    gap: 8px;
+    align-items: baseline;
     justify-content: space-between;
-  }
-
-  &__meta {
-    min-width: 0;
+    gap: 10px;
   }
 
   &__name {
     color: #e7e7e7;
     font-size: 13px;
-    font-weight: 600;
+    font-weight: 700;
     word-break: break-word;
   }
 
   &__path {
     color: #808080;
     font-size: 11px;
-    margin-top: 1px;
+    margin-top: 2px;
     word-break: break-word;
   }
 
-  &__summary {
+  &__meta-summary {
     color: #bcbcbc;
     font-size: 12px;
-    margin-top: 3px;
+    margin-top: 4px;
     word-break: break-word;
   }
 

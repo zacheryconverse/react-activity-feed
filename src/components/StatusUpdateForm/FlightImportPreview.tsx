@@ -1,5 +1,5 @@
 /* eslint-disable sonarjs/cognitive-complexity */
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 
 import { formatTimeToAmPm } from './importShared';
 
@@ -113,62 +113,19 @@ export const FlightImportPreview = ({
 }: FlightImportPreviewProps) => {
   const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
 
-  const counts = useMemo(() => {
-    const next = {
-      duplicates: 0,
-      errors: 0,
-      possibleDuplicates: 0,
-      willUpload: 0,
-    };
-
-    items.forEach((item) => {
-      if (item.status === 'ready') {
-        next.willUpload += 1;
-      } else if (item.status === 'comparing') {
-        // not counted until dedupe returns
-      } else if (item.status === 'duplicate') {
-        next.duplicates += 1;
-      } else if (item.status === 'possible_duplicate') {
-        next.possibleDuplicates += 1;
-        if (possibleDuplicateOverrides[item.id]) next.willUpload += 1;
-      } else if (item.status === 'error') {
-        next.errors += 1;
-      }
-    });
-
-    return next;
-  }, [items, possibleDuplicateOverrides]);
-
   if (!items.length) return null;
 
   const isComparing = items.some((i) => i.status === 'comparing');
-  const comparisonComplete = !isComparing && !items.some((i) => i.status === 'parsing');
 
   return (
     <div className="raf-flight-import-preview">
       <div className="raf-flight-import-preview__header">
-        <div className="raf-flight-import-preview__title">Flight import preview</div>
-        <div className="raf-flight-import-preview__counts">
-          <span>New uploads: {counts.willUpload}</span>
-          <span>Duplicates: {counts.duplicates}</span>
-          {counts.possibleDuplicates > 0 && <span>Possible duplicates: {counts.possibleDuplicates}</span>}
-          {counts.errors > 0 && <span>Errors: {counts.errors}</span>}
-        </div>
+        <div className="raf-flight-import-preview__title">Flight preview</div>
       </div>
-
-      <p className="raf-flight-import-preview__reassurance">
-        We compare each flight with your logbook so you never get duplicate entries.
-      </p>
 
       {isComparing && (
         <p className="raf-flight-import-preview__progress" role="status">
-          Comparing {items.length} flight{items.length !== 1 ? 's' : ''} with your logbook…
-        </p>
-      )}
-
-      {comparisonComplete && (
-        <p className="raf-flight-import-preview__success" role="status">
-          ✓ Compared with your logbook
+          Checking flight…
         </p>
       )}
 
@@ -189,14 +146,8 @@ export const FlightImportPreview = ({
               key={item.id}
               className={`raf-flight-import-preview__item raf-flight-import-preview__item--${item.status}`}
             >
-              <div className="raf-flight-import-preview__row">
-                <div className="raf-flight-import-preview__meta">
-                  <div className="raf-flight-import-preview__name">{item.fileName}</div>
-                  {item.filePath && item.filePath !== item.fileName && (
-                    <div className="raf-flight-import-preview__path">{item.filePath}</div>
-                  )}
-                  <div className="raf-flight-import-preview__summary">{formatSummary(item.summary)}</div>
-                </div>
+              <div className="raf-flight-import-preview__row-head">
+                <div className="raf-flight-import-preview__name">{item.fileName}</div>
                 <div className="raf-flight-import-preview__status">
                   {(isParsing || isComparingItem) && (
                     <span className="raf-flight-import-preview__spinner" aria-hidden="true" />
@@ -208,6 +159,10 @@ export const FlightImportPreview = ({
                   </span>
                 </div>
               </div>
+              {item.filePath && item.filePath !== item.fileName && (
+                <div className="raf-flight-import-preview__path">{item.filePath}</div>
+              )}
+              <div className="raf-flight-import-preview__meta-summary">{formatSummary(item.summary)}</div>
 
               <div className="raf-flight-import-preview__actions">
                 {isPossible && onTogglePossibleDuplicate && (

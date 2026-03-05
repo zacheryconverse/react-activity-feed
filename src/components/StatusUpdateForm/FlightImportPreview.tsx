@@ -148,35 +148,17 @@ export const FlightImportPreview = ({
     <div className="raf-flight-import-preview">
       <div className="raf-flight-import-preview__header">
         <div className="raf-flight-import-preview__title">Flight import preview</div>
+        <div className="raf-flight-import-preview__counts">
+          <span>New uploads: {counts.willUpload}</span>
+          <span>Duplicates: {counts.duplicates}</span>
+          {counts.possibleDuplicates > 0 && <span>Possible duplicates: {counts.possibleDuplicates}</span>}
+          {counts.errors > 0 && <span>Errors: {counts.errors}</span>}
+        </div>
       </div>
 
       <p className="raf-flight-import-preview__reassurance">
-        We compare each flight with your logbook so you never get duplicate entries. Duplicates are skipped
-        automatically.
+        We compare each flight with your logbook so you never get duplicate entries.
       </p>
-
-      {comparisonComplete && (
-        <div className="raf-flight-import-preview__summary">
-          <span className="raf-flight-import-preview__summary-primary">
-            Importing: {counts.willUpload} new {counts.willUpload === 1 ? 'flight' : 'flights'}
-          </span>
-          {counts.duplicates > 0 && (
-            <span className="raf-flight-import-preview__summary-skipped">
-              {counts.duplicates} duplicate{counts.duplicates !== 1 ? 's' : ''} skipped (already in logbook)
-            </span>
-          )}
-          {counts.possibleDuplicates > 0 && (
-            <span>
-              {counts.possibleDuplicates} possible duplicate{counts.possibleDuplicates !== 1 ? 's' : ''}
-            </span>
-          )}
-          {counts.errors > 0 && (
-            <span>
-              {counts.errors} error{counts.errors !== 1 ? 's' : ''}
-            </span>
-          )}
-        </div>
-      )}
 
       {isComparing && (
         <p className="raf-flight-import-preview__progress" role="status">
@@ -223,9 +205,6 @@ export const FlightImportPreview = ({
                     className={`raf-flight-import-preview__status-tag raf-flight-import-preview__status-tag--${item.status}`}
                   >
                     {STATUS_LABELS[item.status]}
-                    {item.status === 'duplicate' && (
-                      <span className="raf-flight-import-preview__status-hint"> - skipped</span>
-                    )}
                   </span>
                 </div>
               </div>

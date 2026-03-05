@@ -79,34 +79,20 @@
     font-weight: 700;
   }
 
+  &__counts {
+    color: #9f9f9f;
+    display: flex;
+    gap: 10px;
+    font-size: 12px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   &__reassurance {
     color: #a8a8a8;
     font-size: 12px;
     margin: 0 12px 10px;
     line-height: 1.4;
-  }
-
-  &__summary {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 4px 12px;
-    color: #b9b9b9;
-    font-size: 12px;
-    padding: 10px 12px;
-    margin: 0 12px 10px;
-    border: 1px solid #222;
-    border-radius: 10px;
-    background: #0f0f0f;
-  }
-
-  &__summary-primary {
-    color: #d0e8d0;
-    font-weight: 600;
-  }
-
-  &__summary-skipped {
-    color: #9a9a9a;
   }
 
   &__progress {
@@ -216,13 +202,6 @@
     border-color: rgba(229, 176, 89, 0.45);
     color: #e5b059;
     background: rgba(124, 90, 35, 0.2);
-  }
-
-  &__status-hint {
-    font-weight: 500;
-    text-transform: none;
-    letter-spacing: 0;
-    opacity: 0.9;
   }
 
   &__status-tag--possible_duplicate {

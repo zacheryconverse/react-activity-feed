@@ -93,7 +93,7 @@ const FlightImportSection = ({
     : null;
 
   if (summaryParts && (summaryCounts?.possibleSkipped || 0) > 0) {
-    summaryParts.push(`Possible skipped: ${summaryCounts?.possibleSkipped || 0}`);
+    summaryParts.push(`Possible duplicates skipped: ${summaryCounts?.possibleSkipped || 0}`);
   }
   if (summaryParts && (summaryCounts?.errors || 0) > 0) {
     summaryParts.push(`Errors: ${summaryCounts?.errors || 0}`);
@@ -121,7 +121,7 @@ const FlightImportSection = ({
         state.flightImportPreviewItems?.length > 0 &&
         !state.showFlightImportConfirm && (
           <div className="raf-flight-import-preview__results">
-            No flights selected to import. Add .igc files or remove skipped duplicates.
+            No flights selected to import. Add files or choose &quot;Import anyway&quot; for possible duplicates.
           </div>
         )}
       {summaryParts && <div className="raf-flight-import-preview__results">{summaryParts.join(' · ')}</div>}

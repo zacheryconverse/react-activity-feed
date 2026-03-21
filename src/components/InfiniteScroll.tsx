@@ -113,9 +113,14 @@ export const InfiniteScroll = forwardRef<unknown, InfiniteScrollProps>((props, r
 
   useEffect(() => {
     const scrollElement = useWindow ? window : scrollComponent.current?.parentNode;
-    scrollElement?.addEventListener('mousewheel', mousewheelListener, useCapture);
+    if (!scrollElement) return;
+
+    const wheelListenerOptions = { capture: Boolean(useCapture), passive: false as const };
+    scrollElement.addEventListener('wheel', mousewheelListener, wheelListenerOptions);
+    scrollElement.addEventListener('mousewheel', mousewheelListener, wheelListenerOptions);
     return () => {
-      scrollElement?.removeEventListener('mousewheel', mousewheelListener, useCapture);
+      scrollElement.removeEventListener('wheel', mousewheelListener, wheelListenerOptions);
+      scrollElement.removeEventListener('mousewheel', mousewheelListener, wheelListenerOptions);
     };
   }, [useCapture, useWindow]);
 

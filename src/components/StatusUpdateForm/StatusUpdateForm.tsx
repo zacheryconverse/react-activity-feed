@@ -177,10 +177,10 @@ const FlightVisibilityBar = ({
   <div className="raf-flight-visibility" role="group" aria-labelledby="raf-flight-visibility-title">
     <div className="raf-flight-visibility__title-row">
       <span id="raf-flight-visibility-title" className="raf-flight-visibility__title">
-        Who sees this flight?
+        Visibility for new flights
       </span>
     </div>
-    <div className="raf-flight-visibility__segmented" role="radiogroup" aria-label="Flight visibility">
+    <div className="raf-flight-visibility__segmented" role="radiogroup" aria-label="Post visibility">
       <button
         type="button"
         role="radio"
@@ -190,14 +190,14 @@ const FlightVisibilityBar = ({
         }`}
         onClick={() => setFlightVisibility('public')}
       >
-        <span className="raf-flight-visibility__segment-label">Feed</span>
-        <span className="raf-flight-visibility__segment-hint">Followers &amp; explore</span>
+        <span className="raf-flight-visibility__segment-label">Public</span>
+        <span className="raf-flight-visibility__segment-hint">Stats &amp; PRs</span>
       </button>
       <button
         type="button"
         role="radio"
         aria-checked={flightVisibility === 'private'}
-        aria-label="Private flight - visible only to you until you make it public"
+        aria-label="Private flight — visible only to you until you make it public"
         disabled={privateVisibilityDisabled}
         className={`raf-flight-visibility__segment${
           flightVisibility === 'private' ? ' raf-flight-visibility__segment--active' : ''
@@ -210,17 +210,17 @@ const FlightVisibilityBar = ({
     </div>
     {privateVisibilityDisabled ? (
       <p className="raf-flight-visibility__message raf-flight-visibility__message--notice">
-        Private works for a single track. Remove extra files here, or use logbook import for batches.
+        Private posting is only available when you upload a single flight. Remove extra files here, or use logbook
+        import for batches.
       </p>
     ) : flightVisibility === 'private' ? (
       <p className="raf-flight-visibility__message">
-        Only you can see this flight until you make it public. It stays off the feed and explore, and does not
-        count toward stats or PRs.
+        Only you can see this flight in your logbook until you make it public. It does not count toward stats or PRs
+        while private.
       </p>
     ) : (
       <p className="raf-flight-visibility__message raf-flight-visibility__message--muted">
-        Most pilots share to the feed. Choose Private to save the track visible only to you until you are ready
-        to share.
+        Default is public — this flight counts toward stats and PRs.
       </p>
     )}
   </div>
@@ -402,20 +402,13 @@ export function StatusUpdateForm<
                   {t('Post')}
                 </Button>
               </div>
-              {showFlightVisibilityBar && (
-                <FlightVisibilityBar
-                  flightVisibility={state.flightVisibility}
-                  privateVisibilityDisabled={privateVisibilityDisabled}
-                  setFlightVisibility={state.setFlightVisibility}
-                />
-              )}
               <span className="upload-hint">
                 {showFlightVisibilityBar
                   ? allowBulkImport
                     ? 'Browse, drag/drop, paste, or select a folder to add more .igc/.zip files'
                     : 'Browse, drag/drop, or paste to replace with another .igc file'
                   : showFlightVisibilityToggle && state.flightVisibility === 'private'
-                  ? 'Only you can see a private flight until you make it public. It stays off the feed and does not count toward stats or PRs while private.'
+                  ? 'Only you can see a private flight in your logbook until you make it public. It does not count toward stats or PRs while private.'
                   : allowBulkImport
                   ? 'Browse, drag/drop, paste, or select a folder for .igc/.zip flight imports'
                   : 'Browse, drag/drop, or paste a single .igc flight file'}
@@ -433,6 +426,13 @@ export function StatusUpdateForm<
               onRemove={handleRemoveImport}
               onRetry={handleRetryImport}
             />
+            {showFlightVisibilityBar && (
+              <FlightVisibilityBar
+                flightVisibility={state.flightVisibility}
+                privateVisibilityDisabled={privateVisibilityDisabled}
+                setFlightVisibility={state.setFlightVisibility}
+              />
+            )}
             <OgSection state={state} />
             <AttachmentPreviewSection state={state} />
             {/* {state.videos.order.length > 0 && (

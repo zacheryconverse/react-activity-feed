@@ -742,6 +742,7 @@ export function useStatusUpdateForm<
   'allowBulkImport' | 'doRequest' | 'modifyActivityData' | 'onSuccess' | 'userId'
 >) {
   const [submitting, setSubmitting] = useState(false);
+  const [flightVisibility, setFlightVisibility] = useState<'public' | 'private'>('public');
 
   const appCtx = useStreamContext<UT, AT, CT, RT, CRT, PT>();
   const client = appCtx.client as StreamClient<UT, AT, CT, RT, CRT, PT>;
@@ -819,12 +820,15 @@ export function useStatusUpdateForm<
     () =>
       previewCandidates.map((item) => ({
         ...item,
-        flightStats: buildPreviewFlightStats(item.flightStats || {}, {
-          includeFirstPointFallback: true,
-          maxPreviewPoints: 2,
-        }),
+        flightStats: {
+          ...buildPreviewFlightStats(item.flightStats || {}, {
+            includeFirstPointFallback: true,
+            maxPreviewPoints: 2,
+          }),
+          visibility: flightVisibility,
+        },
       })),
-    [previewCandidates],
+    [flightVisibility, previewCandidates],
   );
 
   const previewSignature = useMemo(
@@ -836,6 +840,7 @@ export function useStatusUpdateForm<
           igcHash: item.igcHash || null,
           date: item?.flightStats?.date || item?.flightStats?.flight_date || null,
           routeDistance: item?.flightStats?.routeDistance || item?.flightStats?.route_distance_km || null,
+          visibility: item?.flightStats?.visibility || 'public',
         })),
       ),
     [previewRequestItems],
@@ -915,6 +920,13 @@ export function useStatusUpdateForm<
   }, [appCtx.baseUrl, client.currentUser?.id, previewSignature, applyImportClassifications]);
 
   const hasBulkImportMode = allowBulkImport && orderedIgcs.length > 1;
+
+  useEffect(() => {
+    if (flightVisibility !== 'private') return;
+    if (orderedIgcs.length <= 1) return;
+    setFlightVisibility('public');
+  }, [flightVisibility, orderedIgcs.length]);
+
   const displayFlightImportPreviewItems = useMemo(
     () =>
       previewingImports
@@ -934,7 +946,11 @@ export function useStatusUpdateForm<
   const showFlightImportConfirm =
     hasBulkImportMode && flightImportPreviewItems.length > 0 && importableFlightItemCount > 0;
   const confirmFlightImportDisabled =
-    importingFlights || previewingImports || importableFlightItemCount === 0 || Boolean(previewImportError);
+    importingFlights ||
+    previewingImports ||
+    importableFlightItemCount === 0 ||
+    Boolean(previewImportError) ||
+    (flightVisibility === 'private' && orderedIgcs.length > 1);
 
   const confirmFlightImport = useCallback(async () => {
     const activeUserId = client.currentUser?.id;
@@ -965,6 +981,7 @@ export function useStatusUpdateForm<
           flightStats: {
             ...igc.data,
             ingestMethod: hasBulkImportMode ? 'bulk_igc' : 'manual_igc',
+            visibility: flightVisibility,
           },
         });
       }
@@ -1064,6 +1081,7 @@ export function useStatusUpdateForm<
   }, [
     appCtx.baseUrl,
     client.currentUser?.id,
+    flightVisibility,
     orderedIgcs,
     possibleDuplicateOverrides,
     hasBulkImportMode,
@@ -1129,7 +1147,13 @@ export function useStatusUpdateForm<
       const formData = new FormData();
       formData.append('file', igc.file);
       formData.append('userId', client.currentUser?.id);
-      formData.append('flightStats', JSON.stringify(igc.data));
+      formData.append(
+        'flightStats',
+        JSON.stringify({
+          ...igc.data,
+          visibility: flightVisibility,
+        }),
+      );
       formData.append('localId', String(igc.id));
       if (igc.overridePossibleDuplicate) {
         formData.append('forcePossibleDuplicate', 'true');
@@ -1157,7 +1181,10 @@ export function useStatusUpdateForm<
       uploadedIgcUrl || object() || (uploadedIgcs.length === 1 ? `igc:${uploadedIgcs[0].id}` : text.trim());
     const igcAttachments = uploadedIgcs
       .map((igc, index) => ({
-        data: igc.data,
+        data: {
+          ...igc.data,
+          visibility: flightVisibility,
+        },
         url: igc.url || (index === 0 ? uploadedIgcUrl : null),
       }))
       .filter((attachment) => attachment.url && attachment.data) as { data: FlightStatistics; url: string }[];
@@ -1168,6 +1195,7 @@ export function useStatusUpdateForm<
       verb: activityVerb,
       text: text.trim(),
       ...(flightId && { flightId }),
+      visibility: flightVisibility,
       attachments: {
         og: activeOg,
         images: uploadedImages.map((image) => image.url).filter(Boolean) as string[],
@@ -1391,6 +1419,7 @@ export function useStatusUpdateForm<
     importingFlights,
     flightImportSummary,
     files,
+    flightVisibility,
     images,
     igcs,
     orderedIgcs,
@@ -1411,6 +1440,7 @@ export function useStatusUpdateForm<
     insertText,
     onChange,
     dismissOg,
+    setFlightVisibility,
     setActiveOg,
     canSubmit,
     confirmFlightImport,

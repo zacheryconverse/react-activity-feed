@@ -64,6 +64,8 @@ export type StatusUpdateFormProps<AT extends DefaultAT = DefaultAT> = PropsWithE
   modifyActivityData?: (activity: NewActivity<AT>) => NewActivity<AT>;
   /** A callback to run after the activity is posted successfully */
   onSuccess?: (activity: Activity<AT>) => void;
+  /** Show a simple public/private flight visibility toggle */
+  showFlightVisibilityToggle?: boolean;
   /** Custom Textarea component implementation */
   Textarea?: ElementOrComponentOrLiteralType<Omit<TextareaProps, 'maxLength' | 'rows'>>;
   /** An extra trigger for ReactTextareaAutocomplete, this can be used to show
@@ -205,6 +207,7 @@ export function StatusUpdateForm<
   userId,
   allowBulkImport = false,
   onSuccess,
+  showFlightVisibilityToggle = false,
   style,
   className,
 }: StatusUpdateFormProps<AT>) {
@@ -255,6 +258,7 @@ export function StatusUpdateForm<
     state.orderedIgcs.length === 1 && state.orderedIgcs[0]?.dedupeStatus === 'duplicate'
       ? 'This flight is already in your logbook. You can still post this flight. It will NOT create a duplicate logbook entry and will NOT change your stats.'
       : null;
+  const privateVisibilityDisabled = state.orderedIgcs.length > 1;
 
   return (
     <Panel style={style} className={className}>
@@ -329,6 +333,25 @@ export function StatusUpdateForm<
                     <VideoUploadButton handleFiles={state.uploadNewFiles} multiple />
                   </div> */}
                   <EmojiPicker onSelect={state.onSelectEmoji} emojiData={emojiData} i18n={emojiI18n} />
+                  {showFlightVisibilityToggle && (
+                    <label
+                      style={{
+                        alignItems: 'center',
+                        color: '#d7d7d7',
+                        display: 'inline-flex',
+                        gap: '8px',
+                        marginLeft: '8px',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={state.flightVisibility === 'private'}
+                        disabled={privateVisibilityDisabled}
+                        onChange={(event) => state.setFlightVisibility(event.target.checked ? 'private' : 'public')}
+                      />
+                      <span>Private flight</span>
+                    </label>
+                  )}
                   {FooterItem}
                 </div>
 
@@ -337,7 +360,11 @@ export function StatusUpdateForm<
                 </Button>
               </div>
               <span className="upload-hint">
-                {allowBulkImport
+                {showFlightVisibilityToggle && privateVisibilityDisabled
+                  ? 'Private bulk import is only available when you upload a single flight.'
+                  : showFlightVisibilityToggle && state.flightVisibility === 'private'
+                  ? 'Private flights are hidden from public surfaces and do not count toward stats or PRs until made public.'
+                  : allowBulkImport
                   ? 'Browse, drag/drop, paste, or select a folder for .igc/.zip flight imports'
                   : 'Browse, drag/drop, or paste a single .igc flight file'}
               </span>

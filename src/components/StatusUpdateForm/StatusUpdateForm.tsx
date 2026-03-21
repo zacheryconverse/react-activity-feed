@@ -177,7 +177,7 @@ const FlightVisibilityBar = ({
   <div className="raf-flight-visibility" role="group" aria-labelledby="raf-flight-visibility-title">
     <div className="raf-flight-visibility__title-row">
       <span id="raf-flight-visibility-title" className="raf-flight-visibility__title">
-        Visibility for new flights
+        Visibility for new flight
       </span>
     </div>
     <div className="raf-flight-visibility__segmented" role="radiogroup" aria-label="Post visibility">
@@ -191,7 +191,7 @@ const FlightVisibilityBar = ({
         onClick={() => setFlightVisibility('public')}
       >
         <span className="raf-flight-visibility__segment-label">Public</span>
-        <span className="raf-flight-visibility__segment-hint">Stats &amp; PRs</span>
+        <span className="raf-flight-visibility__segment-hint">Social post, stats &amp; PRs</span>
       </button>
       <button
         type="button"
@@ -220,7 +220,7 @@ const FlightVisibilityBar = ({
       </p>
     ) : (
       <p className="raf-flight-visibility__message raf-flight-visibility__message--muted">
-        Default is public — this flight counts toward stats and PRs.
+        Default is public - this flight is shared as a social post and counts toward stats and PRs.
       </p>
     )}
   </div>

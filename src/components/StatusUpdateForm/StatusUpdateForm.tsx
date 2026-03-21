@@ -197,7 +197,7 @@ const FlightVisibilityBar = ({
         type="button"
         role="radio"
         aria-checked={flightVisibility === 'private'}
-        aria-label="Private flight — logbook only until you make it public"
+        aria-label="Private flight - visible only to you until you make it public"
         disabled={privateVisibilityDisabled}
         className={`raf-flight-visibility__segment${
           flightVisibility === 'private' ? ' raf-flight-visibility__segment--active' : ''
@@ -205,7 +205,7 @@ const FlightVisibilityBar = ({
         onClick={() => setFlightVisibility('private')}
       >
         <span className="raf-flight-visibility__segment-label">Private</span>
-        <span className="raf-flight-visibility__segment-hint">Logbook only</span>
+        <span className="raf-flight-visibility__segment-hint">Visible to you only</span>
       </button>
     </div>
     {privateVisibilityDisabled ? (
@@ -214,11 +214,13 @@ const FlightVisibilityBar = ({
       </p>
     ) : flightVisibility === 'private' ? (
       <p className="raf-flight-visibility__message">
-        Private flights are hidden from public surfaces and do not count toward stats or PRs until made public.
+        Only you can see this flight until you make it public. It stays off the feed and explore, and does not
+        count toward stats or PRs.
       </p>
     ) : (
       <p className="raf-flight-visibility__message raf-flight-visibility__message--muted">
-        Most pilots share to the feed. Use Private if you want to save the track first and share later.
+        Most pilots share to the feed. Choose Private to save the track visible only to you until you are ready
+        to share.
       </p>
     )}
   </div>
@@ -318,8 +320,7 @@ export function StatusUpdateForm<
       ? 'This flight is already in your logbook. You can still post this flight. It will NOT create a duplicate logbook entry and will NOT change your stats.'
       : null;
   const privateVisibilityDisabled = state.orderedIgcs.length > 1;
-  const showFlightVisibilityBar =
-    showFlightVisibilityToggle && state.orderedIgcs.length > 0;
+  const showFlightVisibilityBar = showFlightVisibilityToggle && state.orderedIgcs.length > 0;
 
   return (
     <Panel style={style} className={className}>
@@ -414,7 +415,7 @@ export function StatusUpdateForm<
                     ? 'Browse, drag/drop, paste, or select a folder to add more .igc/.zip files'
                     : 'Browse, drag/drop, or paste to replace with another .igc file'
                   : showFlightVisibilityToggle && state.flightVisibility === 'private'
-                  ? 'Private flights are hidden from public surfaces and do not count toward stats or PRs until made public.'
+                  ? 'Only you can see a private flight until you make it public. It stays off the feed and does not count toward stats or PRs while private.'
                   : allowBulkImport
                   ? 'Browse, drag/drop, paste, or select a folder for .igc/.zip flight imports'
                   : 'Browse, drag/drop, or paste a single .igc flight file'}

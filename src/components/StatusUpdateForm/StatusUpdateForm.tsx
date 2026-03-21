@@ -165,6 +165,65 @@ const OgSection = ({ state }: { state: StatusUpdateFormState }) => (
   </>
 );
 
+const FlightVisibilityBar = ({
+  flightVisibility,
+  privateVisibilityDisabled,
+  setFlightVisibility,
+}: {
+  flightVisibility: 'public' | 'private';
+  privateVisibilityDisabled: boolean;
+  setFlightVisibility: (next: 'public' | 'private') => void;
+}) => (
+  <div className="raf-flight-visibility" role="group" aria-labelledby="raf-flight-visibility-title">
+    <div className="raf-flight-visibility__title-row">
+      <span id="raf-flight-visibility-title" className="raf-flight-visibility__title">
+        Who sees this flight?
+      </span>
+    </div>
+    <div className="raf-flight-visibility__segmented" role="radiogroup" aria-label="Flight visibility">
+      <button
+        type="button"
+        role="radio"
+        aria-checked={flightVisibility === 'public'}
+        className={`raf-flight-visibility__segment${
+          flightVisibility === 'public' ? ' raf-flight-visibility__segment--active' : ''
+        }`}
+        onClick={() => setFlightVisibility('public')}
+      >
+        <span className="raf-flight-visibility__segment-label">Feed</span>
+        <span className="raf-flight-visibility__segment-hint">Followers &amp; explore</span>
+      </button>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={flightVisibility === 'private'}
+        aria-label="Private flight — logbook only until you make it public"
+        disabled={privateVisibilityDisabled}
+        className={`raf-flight-visibility__segment${
+          flightVisibility === 'private' ? ' raf-flight-visibility__segment--active' : ''
+        }`}
+        onClick={() => setFlightVisibility('private')}
+      >
+        <span className="raf-flight-visibility__segment-label">Private</span>
+        <span className="raf-flight-visibility__segment-hint">Logbook only</span>
+      </button>
+    </div>
+    {privateVisibilityDisabled ? (
+      <p className="raf-flight-visibility__message raf-flight-visibility__message--notice">
+        Private works for a single track. Remove extra files here, or use logbook import for batches.
+      </p>
+    ) : flightVisibility === 'private' ? (
+      <p className="raf-flight-visibility__message">
+        Private flights are hidden from public surfaces and do not count toward stats or PRs until made public.
+      </p>
+    ) : (
+      <p className="raf-flight-visibility__message raf-flight-visibility__message--muted">
+        Most pilots share to the feed. Use Private if you want to save the track first and share later.
+      </p>
+    )}
+  </div>
+);
+
 const AttachmentPreviewSection = ({ state }: { state: StatusUpdateFormState }) => (
   <>
     {state.images.order.length > 0 && (
@@ -259,6 +318,8 @@ export function StatusUpdateForm<
       ? 'This flight is already in your logbook. You can still post this flight. It will NOT create a duplicate logbook entry and will NOT change your stats.'
       : null;
   const privateVisibilityDisabled = state.orderedIgcs.length > 1;
+  const showFlightVisibilityBar =
+    showFlightVisibilityToggle && state.orderedIgcs.length > 0;
 
   return (
     <Panel style={style} className={className}>
@@ -333,25 +394,6 @@ export function StatusUpdateForm<
                     <VideoUploadButton handleFiles={state.uploadNewFiles} multiple />
                   </div> */}
                   <EmojiPicker onSelect={state.onSelectEmoji} emojiData={emojiData} i18n={emojiI18n} />
-                  {showFlightVisibilityToggle && (
-                    <label
-                      style={{
-                        alignItems: 'center',
-                        color: '#d7d7d7',
-                        display: 'inline-flex',
-                        gap: '8px',
-                        marginLeft: '8px',
-                      }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={state.flightVisibility === 'private'}
-                        disabled={privateVisibilityDisabled}
-                        onChange={(event) => state.setFlightVisibility(event.target.checked ? 'private' : 'public')}
-                      />
-                      <span>Private flight</span>
-                    </label>
-                  )}
                   {FooterItem}
                 </div>
 
@@ -359,9 +401,18 @@ export function StatusUpdateForm<
                   {t('Post')}
                 </Button>
               </div>
+              {showFlightVisibilityBar && (
+                <FlightVisibilityBar
+                  flightVisibility={state.flightVisibility}
+                  privateVisibilityDisabled={privateVisibilityDisabled}
+                  setFlightVisibility={state.setFlightVisibility}
+                />
+              )}
               <span className="upload-hint">
-                {showFlightVisibilityToggle && privateVisibilityDisabled
-                  ? 'Private bulk import is only available when you upload a single flight.'
+                {showFlightVisibilityBar
+                  ? allowBulkImport
+                    ? 'Browse, drag/drop, paste, or select a folder to add more .igc/.zip files'
+                    : 'Browse, drag/drop, or paste to replace with another .igc file'
                   : showFlightVisibilityToggle && state.flightVisibility === 'private'
                   ? 'Private flights are hidden from public surfaces and do not count toward stats or PRs until made public.'
                   : allowBulkImport

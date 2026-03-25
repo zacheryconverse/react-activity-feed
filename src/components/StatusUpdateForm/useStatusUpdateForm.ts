@@ -1189,13 +1189,15 @@ export function useStatusUpdateForm<
       }))
       .filter((attachment) => attachment.url && attachment.data) as { data: FlightStatistics; url: string }[];
 
+    const hasFlightContext = igcAttachments.length > 0 || Boolean(flightId);
+
     const activity: NewActivity<AT> = {
       actor: client.currentUser?.ref() as string,
       object: fallbackObject,
       verb: activityVerb,
       text: text.trim(),
       ...(flightId && { flightId }),
-      visibility: flightVisibility,
+      ...(hasFlightContext && { visibility: flightVisibility }),
       attachments: {
         og: activeOg,
         images: uploadedImages.map((image) => image.url).filter(Boolean) as string[],

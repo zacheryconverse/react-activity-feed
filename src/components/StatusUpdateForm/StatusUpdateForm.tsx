@@ -406,12 +406,12 @@ export function StatusUpdateForm<
                 {showFlightVisibilityBar
                   ? allowBulkImport
                     ? 'Browse, drag/drop, paste, or select a folder to add more .igc/.zip files'
-                    : 'Browse, drag/drop, or paste to replace with another .igc file'
+                    : 'Browse, drag/drop, or paste .igc flight file'
                   : showFlightVisibilityToggle && state.flightVisibility === 'private'
                   ? 'Only you can see a private flight in your logbook until you make it public. It does not count toward stats or PRs while private.'
                   : allowBulkImport
                   ? 'Browse, drag/drop, paste, or select a folder for .igc/.zip flight imports'
-                  : 'Browse, drag/drop, or paste a single .igc flight file'}
+                  : 'Browse, drag/drop, or paste .igc flight file'}
               </span>
             </PanelFooter>
 

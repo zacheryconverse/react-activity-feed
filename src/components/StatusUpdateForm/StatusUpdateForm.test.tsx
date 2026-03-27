@@ -140,9 +140,7 @@ describe('StatusUpdateForm', () => {
     expect(screen.getByRole('radio', { name: 'Private flight unavailable for duplicate uploads' })).toBeDisabled();
     expect(screen.getByText('Unavailable for duplicates')).toBeInTheDocument();
     expect(
-      screen.getByText(
-        'Duplicate flights can still be posted publicly, but private duplicate uploads are disabled because they do not create a new logbook entry or change your stats.',
-      ),
-    ).toBeInTheDocument();
+      screen.queryByText(/Duplicate flights can still be posted publicly, but private duplicate uploads are disabled/i),
+    ).not.toBeInTheDocument();
   });
 });

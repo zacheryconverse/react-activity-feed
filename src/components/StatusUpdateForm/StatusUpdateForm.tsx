@@ -346,12 +346,7 @@ const FlightVisibilityBar = ({
           Private posting is only available when you upload a single flight. Remove extra files here, or use logbook
           import for batches.
         </p>
-      ) : privateVisibilityDisabledReason === 'duplicate' ? (
-        <p className="raf-flight-visibility__message raf-flight-visibility__message--notice">
-          Duplicate flights can still be posted publicly, but private duplicate uploads are disabled because they do not
-          create a new logbook entry or change your stats.
-        </p>
-      ) : flightVisibility === 'private' ? (
+      ) : privateVisibilityDisabledReason === 'duplicate' ? null : flightVisibility === 'private' ? (
         <p className="raf-flight-visibility__message">
           Only you can see this flight in your logbook until you make it public. It does not count toward stats or PRs
           while private.

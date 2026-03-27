@@ -461,6 +461,7 @@ export function StatusUpdateForm<
   const errorMessages = [state.uploadError, state.sourceError, state.previewImportError, state.submitError].filter(
     Boolean,
   ) as string[];
+  const showSingleIgcComposerHint = state.composerAttachmentHint === 'single_igc_limit';
   const duplicateSingleIgcNotice =
     state.orderedIgcs.length === 1 && state.orderedIgcs[0]?.dedupeStatus === 'duplicate'
       ? 'This flight is already in your logbook. You can still post this flight. It will NOT create a duplicate logbook entry and will NOT change your stats.'
@@ -469,7 +470,7 @@ export function StatusUpdateForm<
 
   return (
     <Panel style={style} className={className}>
-      <form onSubmit={state.onSubmitForm}>
+      <form className="raf-status-update-form" onSubmit={state.onSubmitForm}>
         <ImageDropzone handleFiles={state.uploadNewFiles}>
           <PanelHeading>{Header ?? <Title>{t('New Post')}</Title>}</PanelHeading>
 
@@ -479,6 +480,15 @@ export function StatusUpdateForm<
                 {msg}
               </div>
             ))}
+            {showSingleIgcComposerHint && (
+              <div className="raf-status-update-form__attachment-hint" role="status">
+                <p className="raf-status-update-form__attachment-hint-title">One flight file per post</p>
+                <p className="raf-status-update-form__attachment-hint-body">
+                  Remove the attached flight if you want to use a different IGC. For multiple files, import from Flight
+                  Log.
+                </p>
+              </div>
+            )}
             {duplicateSingleIgcNotice && (
               <div className="raf-flight-import-preview__dedupe-note">{duplicateSingleIgcNotice}</div>
             )}

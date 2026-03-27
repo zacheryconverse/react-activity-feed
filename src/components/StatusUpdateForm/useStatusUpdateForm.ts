@@ -243,6 +243,8 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
   const [igcs, setIgcs] = useState<IgcState>(defaultIgcState);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [sourceError, setSourceError] = useState<string | null>(null);
+  /** Composer-only: second IGC blocked — informational, does not block Post */
+  const [composerAttachmentHint, setComposerAttachmentHint] = useState<'single_igc_limit' | null>(null);
 
   const reqInProgress = useRef<Record<string, boolean>>({});
 
@@ -308,6 +310,7 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     setFiles(defaultFileState);
     setIgcs(defaultIgcState);
     setSourceError(null);
+    setComposerAttachmentHint(null);
   }, []);
 
   const uploadNewImage = useCallback((file: File | Blob) => {
@@ -538,6 +541,7 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     async (files) => {
       const fileList = Array.isArray(files) ? files : Array.from(files || []);
       setSourceError(null);
+      setComposerAttachmentHint(null);
 
       for (let i = 0; i < fileList.length; i += 1) {
         const file = fileList[i];
@@ -567,7 +571,7 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
             continue;
           }
           if (!allowBulkImport && inferredType === 'igc' && igcs.order.length >= 1) {
-            setSourceError('Only one IGC can be attached to a post.');
+            setComposerAttachmentHint('single_igc_limit');
             continue;
           }
 
@@ -672,6 +676,12 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
   }, []);
 
   useEffect(() => {
+    if (igcs.order.length === 0) {
+      setComposerAttachmentHint(null);
+    }
+  }, [igcs.order.length]);
+
+  useEffect(() => {
     images.order
       .filter((id) => !reqInProgress.current[id] && images.data[id].state === 'uploading')
       .forEach(async (id) => {
@@ -719,6 +729,7 @@ const useUpload = ({ client, logErr, allowBulkImport = false }: UseUploadProps) 
     togglePossibleDuplicateOverride,
     uploadError,
     sourceError,
+    composerAttachmentHint,
   };
 };
 
@@ -785,6 +796,7 @@ export function useStatusUpdateForm<
     togglePossibleDuplicateOverride,
     uploadError,
     sourceError,
+    composerAttachmentHint,
   } = useUpload({ client: client as StreamClient, logErr, allowBulkImport });
   const [previewingImports, setPreviewingImports] = useState(false);
   const [importingFlights, setImportingFlights] = useState(false);
@@ -1458,6 +1470,7 @@ export function useStatusUpdateForm<
     onPaste,
     uploadError,
     sourceError,
+    composerAttachmentHint,
     submitError,
   };
 }

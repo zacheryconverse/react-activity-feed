@@ -83,6 +83,7 @@ const buildMockState = (overrides = {}) => {
     setFlightVisibility: jest.fn(),
     showFlightImportConfirm: false,
     sourceError: null,
+    composerAttachmentHint: null,
     submitting: false,
     submitError: null,
     text: '',

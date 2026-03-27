@@ -99,15 +99,19 @@ const FlightImportSection = ({
   const importedCount = summaryCounts?.imported ?? 0;
   const showImportResult = summaryCounts && importedCount > 0;
   const displayItems = state.displayFlightImportPreviewItems ?? state.flightImportPreviewItems ?? [];
+  const isBulkMultiFlight = state.hasBulkImportMode;
 
   const flightImportStatusLine = useMemo(() => {
     const items = state.displayFlightImportPreviewItems ?? state.flightImportPreviewItems ?? [];
     if (!items.length) return null;
     if (state.previewImportError) return null;
     if (state.previewingImports) {
+      const comparingText = isBulkMultiFlight
+        ? `Comparing ${items.length} flight${items.length !== 1 ? 's' : ''} with your logbook…`
+        : 'Checking your logbook…';
       return (
         <span className="raf-flight-import-preview__status-bit raf-flight-import-preview__status-bit--ok">
-          {`Comparing ${items.length} flight${items.length !== 1 ? 's' : ''} with your logbook…`}
+          {comparingText}
         </span>
       );
     }
@@ -125,11 +129,15 @@ const FlightImportSection = ({
       }
     }
     const segments: { key: string; text: string; tone: 'ok' | 'warn' | 'possible' | 'danger' }[] = [];
-    segments.push({
-      key: 'importing',
-      tone: 'ok',
-      text: `Importing: ${willUpload} new flight${willUpload !== 1 ? 's' : ''}`,
-    });
+    const omitImportingCount =
+      !isBulkMultiFlight && (willUpload === 0 || (duplicates === 0 && errors === 0 && possibleDups === 0));
+    if (!omitImportingCount) {
+      segments.push({
+        key: 'importing',
+        tone: 'ok',
+        text: `Importing: ${willUpload} new flight${willUpload !== 1 ? 's' : ''}`,
+      });
+    }
     if (duplicates > 0) {
       segments.push({
         key: 'duplicates',
@@ -151,6 +159,7 @@ const FlightImportSection = ({
         text: `${errors} error${errors !== 1 ? 's' : ''}`,
       });
     }
+    if (!segments.length) return null;
     return (
       <>
         {segments.map((seg) => (
@@ -164,6 +173,7 @@ const FlightImportSection = ({
       </>
     );
   }, [
+    isBulkMultiFlight,
     state.displayFlightImportPreviewItems,
     state.flightImportPreviewItems,
     state.previewImportError,
@@ -188,7 +198,7 @@ const FlightImportSection = ({
 
   const postListNotice =
     allowBulkImport &&
-    state.hasBulkImportMode &&
+    isBulkMultiFlight &&
     !state.previewingImports &&
     !state.previewImportError &&
     displayItems.length > 0 &&
@@ -214,6 +224,7 @@ const FlightImportSection = ({
     <>
       {displayItems.length > 0 && (
         <FlightImportPreview
+          compact={!isBulkMultiFlight}
           items={displayItems}
           onRemove={onRemove}
           onRetry={onRetry}
@@ -221,9 +232,10 @@ const FlightImportSection = ({
           showConfirm={allowBulkImport && state.showFlightImportConfirm}
           confirmDisabled={state.confirmFlightImportDisabled}
           confirmLabel={state.importingFlights ? 'Importing flights...' : 'Confirm import'}
+          panelTitle={isBulkMultiFlight ? 'Review import' : 'Flight'}
           possibleDuplicateOverrides={state.possibleDuplicateOverrides}
           onTogglePossibleDuplicate={state.togglePossibleDuplicateOverride}
-          reassurance={FLIGHT_IMPORT_REASSURANCE}
+          reassurance={isBulkMultiFlight ? FLIGHT_IMPORT_REASSURANCE : null}
           statusLine={flightImportStatusLine}
           postListNotice={postListNotice}
           visibilitySlot={visibilitySlot}
@@ -353,7 +365,7 @@ const FlightVisibilityBar = ({
         </p>
       ) : (
         <p className="raf-flight-visibility__message raf-flight-visibility__message--muted">
-          Default is public — your logbook entry counts toward stats and PRs.
+          Default is public - your logbook entry counts toward stats and PRs.
         </p>
       )}
     </div>

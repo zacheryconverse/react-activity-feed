@@ -29,6 +29,8 @@ export type FlightImportPreviewItem = {
 
 export type FlightImportPreviewProps = {
   items: FlightImportPreviewItem[];
+  /** Single-flight composer: same card/list as bulk but tighter header/spacing */
+  compact?: boolean;
   confirmDisabled?: boolean;
   confirmLabel?: string;
   onConfirm?: () => void;
@@ -116,6 +118,7 @@ function displayImportFileLabel(fileName: string, filePath?: string | null) {
 }
 
 export const FlightImportPreview = ({
+  compact = false,
   confirmDisabled = false,
   confirmLabel = 'Confirm import',
   items,
@@ -142,7 +145,7 @@ export const FlightImportPreview = ({
   const statusLine = statusLineProp !== undefined ? statusLineProp : fallbackStatusLine;
 
   return (
-    <div className="raf-flight-import-preview">
+    <div className={`raf-flight-import-preview${compact ? ' raf-flight-import-preview--compact' : ''}`}>
       <div className="raf-flight-import-preview__header">
         <div className="raf-flight-import-preview__title">{panelTitle}</div>
       </div>

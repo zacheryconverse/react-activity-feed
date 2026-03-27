@@ -831,6 +831,7 @@ export function useStatusUpdateForm<
     [flightVisibility, previewCandidates],
   );
 
+  /** Dedupe preview is independent of public/private; omit visibility so toggling it does not re-run preview (avoids flicker: Comparing… vs Importing…). */
   const previewSignature = useMemo(
     () =>
       JSON.stringify(
@@ -840,7 +841,6 @@ export function useStatusUpdateForm<
           igcHash: item.igcHash || null,
           date: item?.flightStats?.date || item?.flightStats?.flight_date || null,
           routeDistance: item?.flightStats?.routeDistance || item?.flightStats?.route_distance_km || null,
-          visibility: item?.flightStats?.visibility || 'public',
         })),
       ),
     [previewRequestItems],

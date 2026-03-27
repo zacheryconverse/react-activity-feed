@@ -68,6 +68,17 @@
   background: transparent;
   border-top: 1px solid #1f1f1f;
 
+  /* Single-flight composer: same list/card treatment as bulk, less header copy & spacing */
+  &--compact {
+    .raf-flight-import-preview__header {
+      padding-bottom: 6px;
+    }
+
+    .raf-flight-import-preview__list {
+      padding-top: 8px;
+    }
+  }
+
   &__header {
     align-items: center;
     border-bottom: 1px solid #1f1f1f;
@@ -119,7 +130,7 @@
     color: #a8a8a8;
     font-size: 12px;
     line-height: 1.4;
-    margin: 0 12px 8px;
+    margin: 8px 12px 8px;
   }
 
   &__post-list {
@@ -399,7 +410,7 @@
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 
-  &:hover:not(:disabled) {
+  &:hover:not(:disabled):not(.raf-flight-visibility__segment--active) {
     border-color: #505050;
     background: #1a1a1a;
   }
@@ -420,6 +431,12 @@
   background: #171b12;
   box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme-color, #c8ff00) 35%, transparent);
   color: #f6f6f6;
+}
+
+.raf-flight-visibility__segment--active:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--theme-color, #c8ff00) 78%, #fff);
+  background: color-mix(in srgb, #171b12 72%, var(--theme-color, #c8ff00) 28%);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--theme-color, #c8ff00) 45%, transparent);
 }
 
 .raf-flight-visibility__segment--active:focus-visible {

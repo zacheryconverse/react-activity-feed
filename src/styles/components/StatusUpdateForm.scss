@@ -58,19 +58,22 @@
   }
 }
 
+/* Dividers only — matches flattened logbook importer (no extra bordered shell) */
 .raf-flight-import-preview {
-  border: 1px solid #2a2a2a;
-  border-radius: $borderRadius;
-  margin: 12px 0;
-  overflow: hidden;
-  background: #0c0c0c;
+  border: none;
+  border-radius: 0;
+  margin: 12px 0 0;
+  padding-top: 10px;
+  overflow: visible;
+  background: transparent;
+  border-top: 1px solid #1f1f1f;
 
   &__header {
     align-items: center;
     border-bottom: 1px solid #1f1f1f;
     display: flex;
     justify-content: space-between;
-    padding: 10px 12px;
+    padding: 0 12px 8px;
   }
 
   &__title {
@@ -80,11 +83,51 @@
   }
 
   &__progress {
-    color: #9fd5ac;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px 12px;
+    align-items: baseline;
     font-size: 12px;
     font-weight: 600;
     margin: 0 12px 10px;
     line-height: 1.4;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+
+  &__status-bit {
+    font-weight: 600;
+
+    &--ok {
+      color: #9fd5ac;
+    }
+
+    &--warn {
+      color: #e5b059;
+    }
+
+    &--possible {
+      color: #f5cd7f;
+    }
+
+    &--danger {
+      color: #f0a6a6;
+    }
+  }
+
+  &__reassurance {
+    color: #a8a8a8;
+    font-size: 12px;
+    line-height: 1.4;
+    margin: 0 12px 8px;
+  }
+
+  &__post-list {
+    padding: 0 12px 10px;
+  }
+
+  &__visibility-slot {
+    padding: 10px 12px 0;
   }
 
   &__list {
@@ -127,13 +170,6 @@
     color: #e7e7e7;
     font-size: 13px;
     font-weight: 700;
-    word-break: break-word;
-  }
-
-  &__path {
-    color: #808080;
-    font-size: 11px;
-    margin-top: 2px;
     word-break: break-word;
   }
 
@@ -293,6 +329,10 @@
   line-height: 1.4;
 }
 
+.raf-flight-import-preview__results--in-panel {
+  margin: 0 12px 10px;
+}
+
 .raf-flight-import-preview__dedupe-note {
   background: rgba(229, 176, 89, 0.12);
   border: 1px solid rgba(229, 176, 89, 0.35);
@@ -317,6 +357,15 @@
   background: #101010;
   margin: 14px 0 10px;
   padding: 12px 14px;
+}
+
+.raf-flight-visibility.raf-flight-visibility--embedded {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  border-top: 1px solid #1f1f1f;
+  background: transparent;
+  padding: 12px 12px 4px;
 }
 
 .raf-flight-visibility__title-row {
@@ -348,10 +397,7 @@
   color: #c8c8c8;
   padding: 10px 12px;
   cursor: pointer;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease,
-    color 0.15s ease;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
 
   &:hover:not(:disabled) {
     border-color: #505050;

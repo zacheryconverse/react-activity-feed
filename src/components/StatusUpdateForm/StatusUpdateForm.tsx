@@ -1,4 +1,5 @@
-import React, { ReactNode, useEffect, useRef } from 'react';
+/* eslint-disable sonarjs/cognitive-complexity */
+import React, { ReactNode, useEffect, useMemo, useRef } from 'react';
 import { Activity, NewActivity, UR } from 'getstream';
 import {
   FilePreviewer,
@@ -78,26 +79,142 @@ export type StatusUpdateFormProps<AT extends DefaultAT = DefaultAT> = PropsWithE
 
 type StatusUpdateFormState = ReturnType<typeof useStatusUpdateForm>;
 
+const FLIGHT_IMPORT_REASSURANCE =
+  'We compare each flight with your logbook so you never get duplicate entries. Duplicates are skipped automatically.';
+
 const FlightImportSection = ({
   allowBulkImport,
   state,
   onRemove,
   onRetry,
+  showFlightVisibilityToggle,
 }: {
   allowBulkImport: boolean;
   onRemove: (id: string) => void;
   onRetry: (id: string) => void;
+  showFlightVisibilityToggle: boolean;
   state: StatusUpdateFormState;
 }) => {
   const summaryCounts = state.flightImportSummary?.counts;
   const importedCount = summaryCounts?.imported ?? 0;
   const showImportResult = summaryCounts && importedCount > 0;
+  const displayItems = state.displayFlightImportPreviewItems ?? state.flightImportPreviewItems ?? [];
+
+  const flightImportStatusLine = useMemo(() => {
+    const items = state.displayFlightImportPreviewItems ?? state.flightImportPreviewItems ?? [];
+    if (!items.length) return null;
+    if (state.previewImportError) return null;
+    if (state.previewingImports) {
+      return (
+        <span className="raf-flight-import-preview__status-bit raf-flight-import-preview__status-bit--ok">
+          {`Comparing ${items.length} flight${items.length !== 1 ? 's' : ''} with your logbook…`}
+        </span>
+      );
+    }
+    let willUpload = 0;
+    let duplicates = 0;
+    let possibleDups = 0;
+    let errors = 0;
+    for (const item of items) {
+      if (item.status === 'ready') willUpload += 1;
+      if (item.status === 'duplicate') duplicates += 1;
+      if (item.status === 'error') errors += 1;
+      if (item.status === 'possible_duplicate') {
+        possibleDups += 1;
+        if (state.possibleDuplicateOverrides[item.id]) willUpload += 1;
+      }
+    }
+    const segments: { key: string; text: string; tone: 'ok' | 'warn' | 'possible' | 'danger' }[] = [];
+    segments.push({
+      key: 'importing',
+      tone: 'ok',
+      text: `Importing: ${willUpload} new flight${willUpload !== 1 ? 's' : ''}`,
+    });
+    if (duplicates > 0) {
+      segments.push({
+        key: 'duplicates',
+        tone: 'warn',
+        text: `${duplicates} duplicate${duplicates !== 1 ? 's' : ''} skipped`,
+      });
+    }
+    if (possibleDups > 0) {
+      segments.push({
+        key: 'possible',
+        tone: 'possible',
+        text: `${possibleDups} possible duplicate${possibleDups !== 1 ? 's' : ''}`,
+      });
+    }
+    if (errors > 0) {
+      segments.push({
+        key: 'errors',
+        tone: 'danger',
+        text: `${errors} error${errors !== 1 ? 's' : ''}`,
+      });
+    }
+    return (
+      <>
+        {segments.map((seg) => (
+          <span
+            key={seg.key}
+            className={`raf-flight-import-preview__status-bit raf-flight-import-preview__status-bit--${seg.tone}`}
+          >
+            {seg.text}
+          </span>
+        ))}
+      </>
+    );
+  }, [
+    state.displayFlightImportPreviewItems,
+    state.flightImportPreviewItems,
+    state.previewImportError,
+    state.previewingImports,
+    state.possibleDuplicateOverrides,
+  ]);
+
+  const privateVisibilityDisabled = state.orderedIgcs.length > 1;
+  const hasSingleDuplicateIgc = state.orderedIgcs.length === 1 && state.orderedIgcs[0]?.dedupeStatus === 'duplicate';
+  const privateVisibilityDisabledReason = privateVisibilityDisabled
+    ? 'multiple'
+    : hasSingleDuplicateIgc
+    ? 'duplicate'
+    : null;
+  const visibilityHeading = state.orderedIgcs.length > 1 ? 'Visibility for new flights' : 'Visibility for new flight';
+
+  useEffect(() => {
+    if (state.flightVisibility !== 'private') return;
+    if (privateVisibilityDisabledReason !== 'duplicate') return;
+    state.setFlightVisibility('public');
+  }, [privateVisibilityDisabledReason, state.flightVisibility, state.setFlightVisibility]);
+
+  const postListNotice =
+    allowBulkImport &&
+    state.hasBulkImportMode &&
+    !state.previewingImports &&
+    !state.previewImportError &&
+    displayItems.length > 0 &&
+    !state.showFlightImportConfirm ? (
+      <div className="raf-flight-import-preview__results raf-flight-import-preview__results--in-panel">
+        Add a flight file or choose &quot;Import anyway&quot; for possible duplicates.
+      </div>
+    ) : null;
+
+  const visibilitySlot =
+    showFlightVisibilityToggle && displayItems.length > 0 ? (
+      <FlightVisibilityBar
+        variant="embedded"
+        heading={visibilityHeading}
+        flightVisibility={state.flightVisibility}
+        privateVisibilityDisabled={Boolean(privateVisibilityDisabledReason)}
+        privateVisibilityDisabledReason={privateVisibilityDisabledReason}
+        setFlightVisibility={state.setFlightVisibility}
+      />
+    ) : null;
 
   return (
     <>
-      {state.flightImportPreviewItems?.length > 0 && (
+      {displayItems.length > 0 && (
         <FlightImportPreview
-          items={state.displayFlightImportPreviewItems ?? state.flightImportPreviewItems}
+          items={displayItems}
           onRemove={onRemove}
           onRetry={onRetry}
           onConfirm={state.confirmFlightImport}
@@ -106,18 +223,12 @@ const FlightImportSection = ({
           confirmLabel={state.importingFlights ? 'Importing flights...' : 'Confirm import'}
           possibleDuplicateOverrides={state.possibleDuplicateOverrides}
           onTogglePossibleDuplicate={state.togglePossibleDuplicateOverride}
+          reassurance={FLIGHT_IMPORT_REASSURANCE}
+          statusLine={flightImportStatusLine}
+          postListNotice={postListNotice}
+          visibilitySlot={visibilitySlot}
         />
       )}
-      {allowBulkImport &&
-        state.hasBulkImportMode &&
-        !state.previewingImports &&
-        !state.previewImportError &&
-        state.flightImportPreviewItems?.length > 0 &&
-        !state.showFlightImportConfirm && (
-          <div className="raf-flight-import-preview__results">
-            Add a flight file or choose &quot;Import anyway&quot; for possible duplicates.
-          </div>
-        )}
       {showImportResult && (
         <div className="raf-flight-import-preview__results">
           {importedCount === 1 ? 'Flight added' : `Imported: ${importedCount}`}
@@ -168,63 +279,91 @@ const OgSection = ({ state }: { state: StatusUpdateFormState }) => (
 const FlightVisibilityBar = ({
   flightVisibility,
   privateVisibilityDisabled,
+  privateVisibilityDisabledReason = null,
   setFlightVisibility,
+  heading = 'Visibility for new flight',
+  variant = 'standalone',
 }: {
   flightVisibility: 'public' | 'private';
   privateVisibilityDisabled: boolean;
   setFlightVisibility: (next: 'public' | 'private') => void;
-}) => (
-  <div className="raf-flight-visibility" role="group" aria-labelledby="raf-flight-visibility-title">
-    <div className="raf-flight-visibility__title-row">
-      <span id="raf-flight-visibility-title" className="raf-flight-visibility__title">
-        Visibility for new flight
-      </span>
+  heading?: string;
+  privateVisibilityDisabledReason?: 'multiple' | 'duplicate' | null;
+  variant?: 'standalone' | 'embedded';
+}) => {
+  const privateSegmentHint =
+    privateVisibilityDisabledReason === 'duplicate'
+      ? 'Unavailable for duplicates'
+      : privateVisibilityDisabledReason === 'multiple'
+      ? 'Single flight only'
+      : 'Visible to you only';
+  const privateAriaLabel =
+    privateVisibilityDisabledReason === 'duplicate'
+      ? 'Private flight unavailable for duplicate uploads'
+      : 'Private flight — visible only to you until you make it public';
+
+  return (
+    <div
+      className={`raf-flight-visibility${variant === 'embedded' ? ' raf-flight-visibility--embedded' : ''}`}
+      role="group"
+      aria-labelledby="raf-flight-visibility-title"
+    >
+      <div className="raf-flight-visibility__title-row">
+        <span id="raf-flight-visibility-title" className="raf-flight-visibility__title">
+          {heading}
+        </span>
+      </div>
+      <div className="raf-flight-visibility__segmented" role="radiogroup" aria-label="Post visibility">
+        <button
+          type="button"
+          role="radio"
+          aria-checked={flightVisibility === 'public'}
+          className={`raf-flight-visibility__segment${
+            flightVisibility === 'public' ? ' raf-flight-visibility__segment--active' : ''
+          }`}
+          onClick={() => setFlightVisibility('public')}
+        >
+          <span className="raf-flight-visibility__segment-label">Public</span>
+          <span className="raf-flight-visibility__segment-hint">Logbook + stats &amp; PRs</span>
+        </button>
+        <button
+          type="button"
+          role="radio"
+          aria-checked={flightVisibility === 'private'}
+          aria-label={privateAriaLabel}
+          disabled={privateVisibilityDisabled}
+          className={`raf-flight-visibility__segment${
+            flightVisibility === 'private' ? ' raf-flight-visibility__segment--active' : ''
+          }`}
+          onClick={() => setFlightVisibility('private')}
+        >
+          <span className="raf-flight-visibility__segment-label">Private</span>
+          <span className="raf-flight-visibility__segment-hint">{privateSegmentHint}</span>
+        </button>
+      </div>
+      {privateVisibilityDisabledReason === 'multiple' ? (
+        <p className="raf-flight-visibility__message raf-flight-visibility__message--notice">
+          Private posting is only available when you upload a single flight. Remove extra files here, or use logbook
+          import for batches.
+        </p>
+      ) : privateVisibilityDisabledReason === 'duplicate' ? (
+        <p className="raf-flight-visibility__message raf-flight-visibility__message--notice">
+          Duplicate flights can still be posted publicly, but private duplicate uploads are disabled because they do not
+          create a new logbook entry or change your stats.
+        </p>
+      ) : flightVisibility === 'private' ? (
+        <p className="raf-flight-visibility__message">
+          Only you can see this flight in your logbook until you make it public. It does not count toward stats or PRs
+          while private.
+        </p>
+      ) : (
+        <p className="raf-flight-visibility__message raf-flight-visibility__message--muted">
+          Default is public — your logbook entry counts toward stats and PRs.
+        </p>
+      )}
     </div>
-    <div className="raf-flight-visibility__segmented" role="radiogroup" aria-label="Post visibility">
-      <button
-        type="button"
-        role="radio"
-        aria-checked={flightVisibility === 'public'}
-        className={`raf-flight-visibility__segment${
-          flightVisibility === 'public' ? ' raf-flight-visibility__segment--active' : ''
-        }`}
-        onClick={() => setFlightVisibility('public')}
-      >
-        <span className="raf-flight-visibility__segment-label">Public</span>
-        <span className="raf-flight-visibility__segment-hint">Social post, stats &amp; PRs</span>
-      </button>
-      <button
-        type="button"
-        role="radio"
-        aria-checked={flightVisibility === 'private'}
-        aria-label="Private flight — visible only to you until you make it public"
-        disabled={privateVisibilityDisabled}
-        className={`raf-flight-visibility__segment${
-          flightVisibility === 'private' ? ' raf-flight-visibility__segment--active' : ''
-        }`}
-        onClick={() => setFlightVisibility('private')}
-      >
-        <span className="raf-flight-visibility__segment-label">Private</span>
-        <span className="raf-flight-visibility__segment-hint">Visible to you only</span>
-      </button>
-    </div>
-    {privateVisibilityDisabled ? (
-      <p className="raf-flight-visibility__message raf-flight-visibility__message--notice">
-        Private posting is only available when you upload a single flight. Remove extra files here, or use logbook
-        import for batches.
-      </p>
-    ) : flightVisibility === 'private' ? (
-      <p className="raf-flight-visibility__message">
-        Only you can see this flight in your logbook until you make it public. It does not count toward stats or PRs
-        while private.
-      </p>
-    ) : (
-      <p className="raf-flight-visibility__message raf-flight-visibility__message--muted">
-        Default is public - this flight is shared as a social post and counts toward stats and PRs.
-      </p>
-    )}
-  </div>
-);
+  );
+};
 
 const AttachmentPreviewSection = ({ state }: { state: StatusUpdateFormState }) => (
   <>
@@ -319,7 +458,6 @@ export function StatusUpdateForm<
     state.orderedIgcs.length === 1 && state.orderedIgcs[0]?.dedupeStatus === 'duplicate'
       ? 'This flight is already in your logbook. You can still post this flight. It will NOT create a duplicate logbook entry and will NOT change your stats.'
       : null;
-  const privateVisibilityDisabled = state.orderedIgcs.length > 1;
   const showFlightVisibilityBar = showFlightVisibilityToggle && state.orderedIgcs.length > 0;
 
   return (
@@ -425,14 +563,8 @@ export function StatusUpdateForm<
               state={state}
               onRemove={handleRemoveImport}
               onRetry={handleRetryImport}
+              showFlightVisibilityToggle={showFlightVisibilityToggle}
             />
-            {showFlightVisibilityBar && (
-              <FlightVisibilityBar
-                flightVisibility={state.flightVisibility}
-                privateVisibilityDisabled={privateVisibilityDisabled}
-                setFlightVisibility={state.setFlightVisibility}
-              />
-            )}
             <OgSection state={state} />
             <AttachmentPreviewSection state={state} />
             {/* {state.videos.order.length > 0 && (
